@@ -23,14 +23,14 @@ func (r *sCtrl) Generate(data *genx.ApiInput) (err error) {
 	r.controller = data.Controller
 	r.api = data.API
 	r.init = data.Init
-	if data.Controller == "" {
-		data.Controller = "internal/controller"
+	if r.controller == "" {
+		r.controller = "internal/controller"
 	}
-	if data.API == "" {
-		data.API = "api"
+	if r.api == "" {
+		r.api = "api"
 	}
-	if data.Init == "" {
-		data.Init = "internal/packed"
+	if r.init == "" {
+		r.init = "internal/packed"
 	}
 	if err = r.filter(apis); err != nil {
 		return
@@ -113,7 +113,7 @@ func (r *sCtrl) controllerInitImport(apis []*genx.API) (err error) {
 		Data: map[string]any{
 			"APIs": apis,
 		},
-		File: r.controller + "/init_controller.go",
+		File: r.init + "/init_controller.go",
 		Must: true,
 	}
 	return ssr.Gen().Execute(input)

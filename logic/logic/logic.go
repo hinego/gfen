@@ -29,17 +29,21 @@ func (r *sLogic) Parse(in *genx.LogicInput) (err error) {
 		return
 	}
 	r.padding()
-	//log.Println(gjson.MustEncodeString(r.data))
 	for _, data := range r.data {
 		if err = r.serviceInterface(data); err != nil {
 			return
+		}
+		for _, logic := range data.Data {
+			if err = r.serviceRegInit(logic); err != nil {
+				return
+			}
 		}
 	}
 	log.Println("logic parse done")
 	//gfile.PutContents("d.json", gjson.MustEncodeString(r.data))
 	return err
 }
-func (r *sLogic) serviceRegInit(logic *genx.Logic, path string) (err error) {
+func (r *sLogic) serviceRegInit(logic *genx.Logic) (err error) {
 	return ssr.Gen().Execute(&genx.Execute{
 		Code: registerTemplate,
 		File: fmt.Sprintf("%s/%s/%s.init.go", r.config.LogicPath, logic.Folder, logic.Base),

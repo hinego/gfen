@@ -5,6 +5,7 @@ import (
 	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/hinego/gfen/genx"
+	"go/format"
 	"golang.org/x/mod/modfile"
 	"log"
 	"strings"
@@ -26,9 +27,11 @@ func (r *sGen) Execute(in *genx.Execute) (err error) {
 		buffer  bytes.Buffer
 		dataMap = map[string]any{}
 		funcMap = template.FuncMap{
-			"title": strings.Title,
-			"lower": strings.ToLower,
+			"title":    strings.Title,
+			"lower":    strings.ToLower,
+			"basename": gfile.Basename,
 		}
+		data []byte
 	)
 	if code, err = template.New("code").Funcs(funcMap).Parse(in.Code); err != nil {
 		return
@@ -37,11 +40,18 @@ func (r *sGen) Execute(in *genx.Execute) (err error) {
 		return err
 	}
 	dataMap["Module"] = r.GetModule()
+	dataMap["SymbolQuota"] = "`"
 	if err = code.Execute(&buffer, dataMap); err != nil {
 		return
 	}
 	log.Println("generate", in.File)
-	return gfile.PutContents(in.File, buffer.String())
+	if data, err = format.Source(buffer.Bytes()); err != nil {
+		return err
+	}
+	if in.Debug {
+		log.Println(string(data))
+	}
+	return gfile.PutContents(in.File, string(data))
 }
 
 func (r *sGen) GetModule() string {

@@ -26,10 +26,11 @@ type Function struct {
 	Default     string //对应 方法的默认值 例如：HelloReq中的string
 }
 type Execute struct {
-	Code string
-	Data any
-	File string
-	Must bool
+	Code  string
+	Data  any
+	File  string
+	Must  bool
+	Debug bool
 }
 type Fun struct {
 	API      *API

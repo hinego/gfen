@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/gfen.iml" filepath="$PROJECT_DIR$/gfen.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/gfen.iml" filepath="$PROJECT_DIR$/.idea/gfen.iml" />
     </modules>
   </component>
 </project>
