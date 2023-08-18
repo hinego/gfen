@@ -10,24 +10,23 @@ import (
 )
 
 type (
-	IGen interface {
-		Execute(in *genx.Execute) (err error)
-		ClearPath(paths ...string)
-		GetModule() string
+	IOrm interface {
+		Generate(data *genx.DaoInput) (err error)
+		GenModel(data *genx.DaoInput) (err error)
 	}
 )
 
 var (
-	localGen IGen
+	localOrm IOrm
 )
 
-func Gen() IGen {
-	if localGen == nil {
-		panic("implement not found for interface IGen, forgot register?")
+func Orm() IOrm {
+	if localOrm == nil {
+		panic("implement not found for interface IOrm, forgot register?")
 	}
-	return localGen
+	return localOrm
 }
 
-func RegisterGen(i IGen) {
-	localGen = i
+func RegisterOrm(i IOrm) {
+	localOrm = i
 }

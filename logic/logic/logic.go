@@ -158,7 +158,6 @@ func (r *sLogic) parseFile(file string) (err error) {
 				if !ok || funcDecl.Recv == nil {
 					continue
 				}
-
 				for _, field := range funcDecl.Recv.List {
 					starExpr, ok := field.Type.(*ast.StarExpr)
 					if !ok {
@@ -185,22 +184,30 @@ func (r *sLogic) parseFile(file string) (err error) {
 					returns := []string{}
 					if funcDecl.Type.Results != nil {
 						for _, field := range funcDecl.Type.Results.List {
-							for _, name := range field.Names {
-								t, pkg := r.exprToString(field.Type, imports)
-								returns = append(returns, name.Name+" "+t)
+							t, pkg := r.exprToString(field.Type, imports)
+							if len(field.Names) > 0 {
+								for _, name := range field.Names {
+									returns = append(returns, name.Name+" "+t)
+									if pkg != "" {
+										pkgs = append(pkgs, pkg)
+									}
+								}
+							} else {
+								returns = append(returns, t)
 								if pkg != "" {
 									pkgs = append(pkgs, pkg)
 								}
 							}
 						}
 					}
-
-					logic.Funcs = append(logic.Funcs, &genx.FuncInfo{
-						Name:       funcDecl.Name.Name,
-						Parameters: params,
-						Returns:    returns,
-						Packages:   pkgs,
-					})
+					if funcDecl.Name.IsExported() {
+						logic.Funcs = append(logic.Funcs, &genx.FuncInfo{
+							Name:       funcDecl.Name.Name,
+							Parameters: params,
+							Returns:    returns,
+							Packages:   pkgs,
+						})
+					}
 				}
 			}
 			//data = append(data, logic)

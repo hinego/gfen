@@ -14,9 +14,15 @@ import (
 
 type sGen struct {
 	module string
+	Files  map[string]struct{}
 }
 
 func (r *sGen) Execute(in *genx.Execute) (err error) {
+	if r.Files == nil {
+		r.Files = map[string]struct{}{}
+	}
+	name := gfile.Abs(in.File)
+	r.Files[name] = struct{}{}
 	if gfile.Exists(in.File) && !in.Must {
 		log.Println("skipfile", in.File)
 		return nil
@@ -53,7 +59,30 @@ func (r *sGen) Execute(in *genx.Execute) (err error) {
 	}
 	return gfile.PutContents(in.File, string(data))
 }
-
+func (r *sGen) ClearPath(paths ...string) {
+	for _, path := range paths {
+		if files, err := gfile.ScanDirFile(path, "*.go", true); err != nil {
+			continue
+		} else {
+			for _, file := range files {
+				if _, ok := r.Files[file]; !ok {
+					gfile.Remove(file)
+				}
+			}
+		}
+	}
+	for _, path := range paths {
+		if files, err := gfile.ScanDir(path, "*.go", false); err != nil {
+			continue
+		} else {
+			for _, file := range files {
+				if _, ok := r.Files[file]; !ok {
+					gfile.Remove(file)
+				}
+			}
+		}
+	}
+}
 func (r *sGen) GetModule() string {
 	if r.module != "" {
 		return r.module

@@ -11,7 +11,7 @@ type (
 {{range .Data}}	I{{.Name}} interface { {{range .Funcs}}
 		{{.Name}}({{range $index, $param := .Parameters}}{{if $index}}, {{end}}{{$param}}{{end}}) ({{range $index, $param := .Returns}}{{if $index}}, {{end}}{{$param}}{{end}}) {{end}}
 	}
-{{end}}	{{.Name}} struct { 
+{{end}}	s{{.Name | title}} struct { 
 		I{{.Source.Name}} {{range .Data}}{{if .Sub}}
 		{{.Base}} I{{.Name}} {{end}}{{end}}
 	}
@@ -19,10 +19,10 @@ type (
 
 
 var (
-	local{{.Name | title}} = &{{.Name}}{}
+	local{{.Name | title}} = &s{{.Name | title}}{}
 )
 {{range .Data}}{{if .Sub}}
-func (r *{{$.Name}}) {{.Base | title}}() I{{.Name}} {
+func (r *s{{$.Name | title}}) {{.Base | title}}() I{{.Name}} {
 	if r.{{.Base}} == nil {
 		if v, ok := faceMap["I{{.Name}}"]; ok {
 			if v1, ok1 := v.(I{{.Name}}); ok1 {
@@ -55,7 +55,7 @@ const registerTemplate = `package {{.Base}}
 import "{{.Module}}/{{.Path}}"
 
 func init() {
-	service.Register("I{{.Name | title}}", &{{.Base}}{})
+	service.Register("I{{.Name | title}}", &s{{.Base | title}}{})
 }
 `
 const serviceInitTemplate = `package {{.Package}}

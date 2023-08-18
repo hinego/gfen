@@ -43,6 +43,7 @@ type ApiInput struct {
 	Controller string // 控制器输出路径
 	API        string // API输出路径
 	Init       string // 初始化输出路径
+	Clear      bool   // 是否情况非自动生成的文件
 }
 
 type LogicInput struct {

@@ -9,4 +9,5 @@ import (
 	_ "github.com/hinego/gfen/logic/dao"
 	_ "github.com/hinego/gfen/logic/gen"
 	_ "github.com/hinego/gfen/logic/logic"
+	_ "github.com/hinego/gfen/logic/orm"
 )
