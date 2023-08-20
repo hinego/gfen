@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
-	"log"
 	"reflect"
 	"strings"
 )
@@ -19,32 +18,15 @@ func (r *Type) Serializer() (value bool) {
 	if r.Package() == "" {
 		return false
 	}
-	val := reflect.ValueOf(r.Type)
-	if val.Kind() == reflect.Ptr && val.IsNil() {
-		val = reflect.New(val.Type().Elem())
+	valType := reflect.TypeOf(r.Type)
+	if valType.Kind() != reflect.Ptr {
+		valType = reflect.PtrTo(valType)
 	}
-	_, okScanner := val.Interface().(sql.Scanner)
-	_, okValuer := val.Interface().(driver.Valuer)
-	if !okScanner {
-		log.Println(r.String(), "未实现sql.Scanner")
-	}
-	if !okValuer {
-		log.Println(r.String(), "未实现driver.Valuer")
-	}
-	return !okScanner || !okValuer
+	ok1 := valType.Implements(reflect.TypeOf((*sql.Scanner)(nil)).Elem())
+	ok2 := valType.Implements(reflect.TypeOf((*driver.Valuer)(nil)).Elem())
+	return !(ok1 && ok2)
 }
 
-//	func ImplementsScannerAndValuer(i interface{}) (bool, bool) {
-//		val := reflect.ValueOf(i)
-//		if val.Kind() == reflect.Ptr && val.IsNil() {
-//			val = reflect.New(val.Type().Elem())
-//		}
-//
-//		_, okScanner := val.Interface().(sql.Scanner)
-//		_, okValuer := val.Interface().(sql.Valuer)
-//
-//		return okScanner, okValuer
-//	}
 func (r *Type) String() string {
 	ref := reflect.ValueOf(r.Type)
 	if ref.Kind() == reflect.Ptr {

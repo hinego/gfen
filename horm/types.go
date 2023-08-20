@@ -1,5 +1,8 @@
 package horm
 
+type Scanner interface {
+	Scan(interface{}) error
+}
 type (
 	Validator struct {
 		Name      string // CHECK约束的名称

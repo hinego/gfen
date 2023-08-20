@@ -557,15 +557,6 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 	}
 }
 
-type queryCtx struct{ 
-	
-}
-
-func (q *Query) WithContext(ctx context.Context) *queryCtx  {
-	return &queryCtx{ 
-	}
-}
-
 func (q *Query) Transaction(fc func(tx *Query) error, opts ...*sql.TxOptions) error {
 	return q.db.Transaction(func(tx *gorm.DB) error { return fc(q.clone(tx)) }, opts...)
 }
