@@ -51,7 +51,7 @@ func (r *sHorm) migrate() (err error) {
 		Map: map[string]any{
 			"Imports": imports,
 		},
-		File: fmt.Sprintf("%s/migrate/model.go", r.Path),
+		File: fmt.Sprintf("%s/migrate/migrate.gen.go", r.Path),
 		Must: true,
 	})
 }
@@ -78,8 +78,9 @@ func (r *sHorm) model() (err error) {
 			Data: v,
 			Map: map[string]any{
 				"Imports": imports,
+				"Package": gfile.Basename(r.Path),
 			},
-			File: fmt.Sprintf("%s/%s.mod.go", r.Path, v.Name),
+			File: fmt.Sprintf("%s/%s.mod.gen.go", r.Path, v.Name),
 			Must: true,
 		}); err != nil {
 			return err
@@ -112,7 +113,10 @@ func (r *sHorm) dao() (err error) {
 					ssr.Gen().Path(r.Path, "field", v.Name+"s"),
 				},
 			},
-			File: fmt.Sprintf("%s/%s.dao.go", r.Path, v.Name),
+			Map: map[string]any{
+				"Package": gfile.Basename(r.Path),
+			},
+			File: fmt.Sprintf("%s/%s.dao.gen.go", r.Path, v.Name),
 			Must: true,
 		}); err != nil {
 			return err
@@ -143,7 +147,10 @@ func (r *sHorm) gen() (err error) {
 	return ssr.Gen().Execute(&genx.Execute{
 		Code: GenTemplate,
 		Data: r.data(),
-		File: fmt.Sprintf("%s/gen.go", r.Path),
+		Map: map[string]any{
+			"Package": gfile.Basename(r.Path),
+		},
+		File: fmt.Sprintf("%s/gen.gen.go", r.Path),
 		Must: true,
 	})
 }

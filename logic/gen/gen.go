@@ -67,8 +67,14 @@ func (r *sGen) Execute(in *genx.Execute) (err error) {
 	return gfile.PutContents(in.File, string(data))
 }
 func (r *sGen) ClearPath(paths ...string) {
+	r.Clear("*.go", paths...)
+}
+func (r *sGen) Clear(pattern string, paths ...string) {
+	if pattern == "" {
+		pattern = "*.go"
+	}
 	for _, path := range paths {
-		if files, err := gfile.ScanDirFile(path, "*.go", true); err != nil {
+		if files, err := gfile.ScanDirFile(path, pattern, true); err != nil {
 			continue
 		} else {
 			for _, file := range files {
@@ -79,7 +85,7 @@ func (r *sGen) ClearPath(paths ...string) {
 		}
 	}
 	for _, path := range paths {
-		if files, err := gfile.ScanDir(path, "*.go", false); err != nil {
+		if files, err := gfile.ScanDir(path, pattern, false); err != nil {
 			continue
 		} else {
 			for _, file := range files {

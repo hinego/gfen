@@ -1,6 +1,6 @@
 package horm
 
-const MigrateTemplate = `package model
+const MigrateTemplate = `package migrate
 
 import (
 	"gorm.io/gorm"
@@ -21,7 +21,7 @@ type {{ .Name }} struct { {{ range .Column }} {{if .Title}}
 }
 {{end}}
 `
-const ModelTemplate = `package dao
+const ModelTemplate = `package {{.Package}}
 
 import (
 	{{ range .Imports }}
@@ -77,7 +77,7 @@ func init(){
 	
 }
 `
-const DaoTemplate = `package dao
+const DaoTemplate = `package {{.Package}}
 
 import (
 	"context" {{ range .Imports }}
@@ -527,7 +527,7 @@ func (a {{.Table}}Do) Delete(models ...*{{.Model}}) (result gen.ResultInfo, err 
 }
 
 `
-const GenTemplate = `package dao
+const GenTemplate = `package {{.Package}}
 
 import (
 	"context"
