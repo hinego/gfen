@@ -5,6 +5,7 @@ import (
 	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/hinego/gfen/genx"
+	"github.com/hinego/gfen/horm"
 	"go/format"
 	"golang.org/x/mod/modfile"
 	"log"
@@ -36,6 +37,7 @@ func (r *sGen) Execute(in *genx.Execute) (err error) {
 			"title":    strings.Title,
 			"lower":    strings.ToLower,
 			"basename": gfile.Basename,
+			"ToName":   horm.ToName,
 		}
 		data []byte
 	)

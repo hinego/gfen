@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
+	"gorm.io/gorm/schema"
 	"reflect"
 	"strings"
 )
@@ -132,7 +133,8 @@ func (c *Column) Tag() string {
 	if len(tags) == 0 {
 		return ""
 	}
-	return "`gorm:\"" + strings.Join(tags, ";") + "\"`"
+	tag := fmt.Sprintf(`gorm:"%v" json:"%v"`, strings.Join(tags, ";"), c.Name)
+	return fmt.Sprintf("`%v`", tag)
 }
 func (c *Column) SetModelType(typ string) {
 	c.modelType = typ
@@ -157,4 +159,25 @@ func (r *Table) DefaultMixin() bool {
 		}
 	}
 	return true
+}
+
+var namer = schema.NamingStrategy{}
+
+func (r *Table) TableName() string {
+	return namer.TableName(r.Name)
+}
+func (r *Enums) Type() string {
+	ref := reflect.ValueOf(r.Default)
+	if ref.Kind() == reflect.Ptr {
+		return "*" + ref.Elem().Type().String()
+	}
+	return ref.Type().String()
+}
+func (r *Enum) String() string {
+	switch v := r.Value.(type) {
+	case string:
+		return fmt.Sprintf(`"%v"`, v)
+	default:
+		return fmt.Sprintf("%v", v)
+	}
 }

@@ -131,6 +131,7 @@ func (r *sHorm) field() (err error) {
 			Data: map[string]any{
 				"Model":       strings.Title(v.Name),
 				"Table":       v.Name,
+				"TableName":   v.TableName(),
 				"Primary":     v.Primary,
 				"PrimaryType": v.PrimaryType,
 				"Column":      v.Column,

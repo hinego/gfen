@@ -24,6 +24,15 @@ type (
 		Reference string //外键引用的字段名 (通常是主键)
 		Unique    bool   //是否唯一
 	}
+	Enum struct {
+		Name  string
+		Value any
+		Desc  string
+	}
+	Enums struct {
+		Default any
+		Enums   []Enum
+	}
 	Column struct {
 		Name       string            //字段的名称
 		Desc       string            //字段的描述
@@ -38,7 +47,7 @@ type (
 		Validators []Validator
 		Relation   *Relation
 		modelType  string
-		Enum       []any
+		Enums      *Enums
 	}
 	Table struct {
 		Name        string

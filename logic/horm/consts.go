@@ -24,12 +24,14 @@ type {{ .Name }} struct { {{ range .Column }} {{if .Title}}
 const ModelTemplate = `package {{.Package}}
 
 import (
+	"context"
+	"gorm.io/gen"
 	{{ range .Imports }}
 	"{{ . }}"
 	{{ end }}
 )
 type edge{{ .Name | title}} struct { {{ range .Relation }} 
-	{{ .Name | title }} {{if .Array}}[]{{end}}*{{ .RefTable | title }}
+	{{ .Name | title }} {{if .Array}}[]{{end}}*{{ .RefTable | title }} 
 {{- end }}
 }
 
@@ -37,8 +39,30 @@ type {{ .Name | title}} struct { {{ range .Column }} {{if .Title}}
 	{{ .Title }} {{ .ModelType }} {{ .Tag }} {{end}}
 {{- end }}
 	edges edge{{ $.Name | title}}
+	query *Query
 }
 
+
+func (r *{{ $.Name | title}}) Tx(tx *Query) *{{ $.Name | title}} {
+	return &{{ $.Name | title}}{ {{ range .Column }} {{if .Title}}
+		{{ .Title }}: r.{{ .Title }}, {{end}} {{end}}
+		edges: r.edges,
+		query: tx,
+	}
+}
+func (r *{{ $.Name | title}}) getQuery() *Query  {
+	if r.query != nil {
+		return r.query
+	}
+	var ctx = context.Background()
+	return Ctx(ctx)
+}
+func (r *{{ $.Name | title}}) Query() I{{ $.Name | title}}Do {
+	return r.getQuery().{{ .Name | title}}().Key(r.{{ .Primary }})
+}
+func (r *{{ $.Name | title}}) Delete() (info gen.ResultInfo,err error) {
+	return r.Query().Delete()
+}
 {{ range .Relation }}
 func (r *{{ $.Name | title}}) Query{{ .Name | title }}() I{{ .RefTable | title }}Do {
 	return Query{{ .RefTable | title }}().Where({{ .RefTable }}s.{{ .ReferenceName }}.Eq(r.{{ .ForeignName }}))
@@ -70,12 +94,14 @@ import "gorm.io/gen/field"
 
 
 var ( {{range .Column}}
- {{.Title}} = field.New{{.Type.Name}}("{{$.Table}}", "{{.Name}}") {{end}}
+ {{.Title}} = field.New{{.Type.Name}}("{{$.TableName}}", "{{.Name}}") {{end}}
 )
 
-func init(){
-	
-}
+{{range $k1,$v1 := .Column}} {{if .Enums}}
+const ( {{range $k, $v := $v1.Enums.Enums}}
+	{{$v1.Title}}{{$v.Name | ToName}} {{$v1.Enums.Type}} = {{$v.String}}	{{end}}
+)
+{{end}}{{end}}
 `
 const DaoTemplate = `package {{.Package}}
 
@@ -199,7 +225,7 @@ type I{{.Model}}Do interface {
 	FindInBatches(result *[]*{{.Model}}, batchSize int, fc func(tx gen.Dao, batch int) error) error
 	Pluck(column field.Expr, dest interface{}) error
 	Delete(...*{{.Model}}) (info gen.ResultInfo, err error)
-	Update(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
+	Update(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
 	UpdateSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
 	Updates(value interface{}) (info gen.ResultInfo, err error)
 	UpdateColumn(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
@@ -238,13 +264,14 @@ func (a {{$.Table}}Do) With{{.Name | title}}() I{{$.Model}}Do {
 {{end}}
 
 func (a {{.Table}}Do) doPreload(data ...*{{.Table | title}}) (err error) {
+	{{if .Relation}}
 	for _,v :=range data	{	{{range .Relation}}
 		if a.preload.{{.Name}} {
 			if _,err = v.Get{{.Name | title}}(); err != nil {
 				return
 			}
 		} {{end}}
-	}
+	} {{end}}
 	return nil
 }
 
