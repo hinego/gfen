@@ -1,7 +1,10 @@
 package horm
 
 import (
+	"database/sql"
+	"database/sql/driver"
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 )
@@ -12,6 +15,36 @@ func (r *Type) Get() (value any) {
 func (r *Type) Valid() (ok bool) {
 	return r.value != nil
 }
+func (r *Type) Serializer() (value bool) {
+	if r.Package() == "" {
+		return false
+	}
+	val := reflect.ValueOf(r.Type)
+	if val.Kind() == reflect.Ptr && val.IsNil() {
+		val = reflect.New(val.Type().Elem())
+	}
+	_, okScanner := val.Interface().(sql.Scanner)
+	_, okValuer := val.Interface().(driver.Valuer)
+	if !okScanner {
+		log.Println(r.String(), "未实现sql.Scanner")
+	}
+	if !okValuer {
+		log.Println(r.String(), "未实现driver.Valuer")
+	}
+	return !okScanner || !okValuer
+}
+
+//	func ImplementsScannerAndValuer(i interface{}) (bool, bool) {
+//		val := reflect.ValueOf(i)
+//		if val.Kind() == reflect.Ptr && val.IsNil() {
+//			val = reflect.New(val.Type().Elem())
+//		}
+//
+//		_, okScanner := val.Interface().(sql.Scanner)
+//		_, okValuer := val.Interface().(sql.Valuer)
+//
+//		return okScanner, okValuer
+//	}
 func (r *Type) String() string {
 	ref := reflect.ValueOf(r.Type)
 	if ref.Kind() == reflect.Ptr {
@@ -107,7 +140,9 @@ func (c *Column) Tag() string {
 	if c.Index {
 		tags = append(tags, "index")
 	}
-
+	if c.Type.Serializer() {
+		tags = append(tags, "serializer:json;")
+	}
 	// Add user-defined tags
 	for k, v := range c.Tags {
 		tags = append(tags, fmt.Sprintf("%s:%s", k, v))
