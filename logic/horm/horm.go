@@ -107,6 +107,7 @@ func (r *sHorm) dao() (err error) {
 				"Primary":     v.Primary,
 				"PrimaryType": v.PrimaryType,
 				"Column":      v.Column,
+				"Relation":    v.Relation,
 				"Imports": []string{
 					ssr.Gen().Path(r.Path, "field", v.Name+"s"),
 				},

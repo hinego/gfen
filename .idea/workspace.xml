@@ -4,12 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d065a5b0-eb0b-4655-a888-a63a313cc1f0" name="Changes" comment="md">
+    <list default="true" id="d065a5b0-eb0b-4655-a888-a63a313cc1f0" name="Changes" comment="修复 Serializer">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/horm/function.go" beforeDir="false" afterPath="$PROJECT_DIR$/horm/function.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/horm/types.go" beforeDir="false" afterPath="$PROJECT_DIR$/horm/types.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/logic/dao/dao.init.go" beforeDir="false" afterPath="$PROJECT_DIR$/logic/dao/dao.init.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/logic/horm/consts.go" beforeDir="false" afterPath="$PROJECT_DIR$/logic/horm/consts.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logic/horm/horm.go" beforeDir="false" afterPath="$PROJECT_DIR$/logic/horm/horm.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/logic/horm/horm.init.go" beforeDir="false" afterPath="$PROJECT_DIR$/logic/horm/horm.init.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -89,7 +88,7 @@
       <workItem from="1690871095573" duration="21816000" />
       <workItem from="1691216478550" duration="659000" />
       <workItem from="1691809482606" duration="217000" />
-      <workItem from="1691809739449" duration="35261000" />
+      <workItem from="1691809739449" duration="36671000" />
     </task>
     <task id="LOCAL-00001" summary="1. 修复潜在的Bug（当返回值未命名时无法获取）&#10;2. 实现了文件清理功能（在生成完成后可以设置需要清理的文件目录，只要此目录内包含本次未生成的文件将直接删除）">
       <option name="closed" value="true" />
@@ -123,7 +122,23 @@
       <option name="project" value="LOCAL" />
       <updated>1692518034847</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="修复 Serializer">
+      <option name="closed" value="true" />
+      <created>1692519511147</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1692519511147</updated>
+    </task>
+    <task id="LOCAL-00006" summary="修复 Serializer">
+      <option name="closed" value="true" />
+      <created>1692519529111</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1692519529111</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -144,7 +159,8 @@
     <MESSAGE value="1. 修复潜在的Bug（当返回值未命名时无法获取）&#10;2. 实现了文件清理功能（在生成完成后可以设置需要清理的文件目录，只要此目录内包含本次未生成的文件将直接删除）" />
     <MESSAGE value="实现了horm" />
     <MESSAGE value="md" />
-    <option name="LAST_COMMIT_MESSAGE" value="md" />
+    <MESSAGE value="修复 Serializer" />
+    <option name="LAST_COMMIT_MESSAGE" value="修复 Serializer" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
