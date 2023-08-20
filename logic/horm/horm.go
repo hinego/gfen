@@ -149,6 +149,19 @@ func (r *sHorm) gen() (err error) {
 }
 func (r *sHorm) fill() {
 	for k, v := range r.Table {
+		if v.DefaultMixin() {
+			r.Table[k].Mixin = append(r.Table[k].Mixin, horm.Model)
+		}
+	}
+	for k, _ := range r.Table {
+		if len(r.Table[k].Mixin) == 0 {
+			continue
+		}
+		for k1, _ := range r.Table[k].Mixin {
+			r.Table[k].Column = append(r.Table[k].Mixin[k1].Column, r.Table[k].Column...)
+		}
+	}
+	for k, v := range r.Table {
 		for _, v1 := range v.Column {
 			if v1.Relation != nil && v1.Relation.Type == horm.BelongsTo {
 				var ref = v1.Relation.Reverse()

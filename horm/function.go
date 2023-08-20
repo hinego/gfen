@@ -143,3 +143,18 @@ func (c *Column) ModelType() string {
 	}
 	return c.Type.String()
 }
+func (r *Table) DefaultMixin() bool {
+	for _, v := range r.Column {
+		if v.Primary {
+			return false
+		}
+	}
+	for _, v := range r.Mixin {
+		for _, v1 := range v.Column {
+			if v1.Primary {
+				return false
+			}
+		}
+	}
+	return true
+}

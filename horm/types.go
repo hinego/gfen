@@ -39,15 +39,19 @@ type (
 		Relation   *Relation
 		modelType  string
 	}
-	Model struct {
+	Table struct {
 		Name        string
 		Primary     string //主键的字段名
 		PrimaryType string //主键的类型
 		Column      []Column
+		Mixin       []Mixin
 		Relation    map[string]*Relation
 	}
+	Mixin struct {
+		Column []Column
+	}
 	Input struct {
-		Table []Model //模型
+		Table []Table //模型
 		Path  string  //输出路径
 	}
 )
