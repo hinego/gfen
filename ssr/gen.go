@@ -14,6 +14,7 @@ type (
 		Execute(in *genx.Execute) (err error)
 		ClearPath(paths ...string)
 		GetModule() string
+		Path(paths ...string) string
 	}
 )
 

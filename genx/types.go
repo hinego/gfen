@@ -28,6 +28,7 @@ type Function struct {
 type Execute struct {
 	Code  string
 	Data  any
+	Map   map[string]any
 	File  string
 	Must  bool
 	Debug bool

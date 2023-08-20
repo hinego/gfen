@@ -39,6 +39,7 @@ func (r *sGen) Execute(in *genx.Execute) (err error) {
 		}
 		data []byte
 	)
+	log.Println("generate", in.File)
 	if code, err = template.New("code").Funcs(funcMap).Parse(in.Code); err != nil {
 		return
 	}
@@ -47,11 +48,17 @@ func (r *sGen) Execute(in *genx.Execute) (err error) {
 	}
 	dataMap["Module"] = r.GetModule()
 	dataMap["SymbolQuota"] = "`"
+	for k, v := range in.Map {
+		dataMap[k] = v
+	}
 	if err = code.Execute(&buffer, dataMap); err != nil {
 		return
 	}
-	log.Println("generate", in.File)
 	if data, err = format.Source(buffer.Bytes()); err != nil {
+		if in.Debug {
+			log.Println("格式化失败", in.File)
+		}
+		gfile.PutContents(in.File, string(buffer.Bytes()))
 		return err
 	}
 	if in.Debug {
@@ -93,4 +100,9 @@ func (r *sGen) GetModule() string {
 	}
 	r.module = file.Module.Mod.Path
 	return file.Module.Mod.Path
+}
+func (r *sGen) Path(paths ...string) string {
+	paths = append([]string{r.GetModule()}, paths...)
+	code := strings.Join(paths, "/")
+	return strings.ReplaceAll(code, "//", "/")
 }

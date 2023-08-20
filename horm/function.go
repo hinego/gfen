@@ -1,0 +1,128 @@
+package horm
+
+import (
+	"fmt"
+	"reflect"
+	"strings"
+)
+
+func (r *Type) Get() (value any) {
+	return r.value
+}
+func (r *Type) Valid() (ok bool) {
+	return r.value != nil
+}
+func (r *Type) String() string {
+	ref := reflect.ValueOf(r.Type)
+	if ref.Kind() == reflect.Ptr {
+		return "*" + ref.Elem().Type().String()
+	}
+	return ref.Type().String()
+}
+func (r *Type) Model() string {
+	ref := reflect.ValueOf(r.Type)
+	for ref.Kind() == reflect.Ptr {
+		ref = ref.Elem()
+	}
+	return ref.Type().String()
+}
+func (r *Type) Package() string {
+	ref := reflect.ValueOf(r.Type)
+	for ref.Kind() == reflect.Ptr {
+		ref = ref.Elem()
+	}
+	return ref.Type().PkgPath()
+}
+func (c *Relation) Tag() string {
+	var tags []string
+	tags = append(tags, fmt.Sprintf("foreignKey:%s", ToName(c.Foreign)))
+	tags = append(tags, fmt.Sprintf("references:%s", ToName(c.Reference)))
+	if len(tags) == 0 {
+		return ""
+	}
+	return "`gorm:\"" + strings.Join(tags, ";") + "\"`"
+}
+func (c *Relation) ForeignName() string {
+	return ToName(c.Foreign)
+}
+func (c *Relation) TableName() string {
+	return ToName(c.Table)
+}
+func (c *Relation) ReferenceName() string {
+	return ToName(c.Reference)
+}
+func (c *Relation) IsBelongsTo() bool {
+	return c.Type == BelongsTo
+}
+func (c *Relation) Array() bool {
+	return c.Type != BelongsTo && !c.Unique
+}
+func (c *Relation) Reverse() *Relation {
+	if c.Type != BelongsTo {
+		return nil
+	}
+	var typ = HasOne
+	if c.Array() {
+		typ = HasMany
+	}
+	return &Relation{
+		Name:      c.RefName,
+		RefName:   c.Name,
+		Type:      typ,
+		Table:     c.RefTable,
+		RefTable:  c.Table,
+		Query:     c.Query,
+		Foreign:   c.Reference,
+		Reference: c.Foreign,
+		Unique:    c.Unique,
+	}
+}
+func (c *Column) IsBelongsTo() bool {
+	return c.Relation != nil && c.Relation.Type == BelongsTo
+}
+func (c *Column) Title() string {
+	return ToName(c.Name)
+}
+func (c *Column) Tag() string {
+	var tags []string
+
+	// Add GORM-specific tags based on column properties
+	if c.Primary {
+		tags = append(tags, "primaryKey")
+	}
+	if c.Name == "" {
+		return ""
+	}
+	tags = append(tags, "column:"+c.Name)
+	tags = append(tags, "type:"+c.Type.Postgres)
+	if c.Increment {
+		tags = append(tags, "autoIncrement")
+	}
+	if c.Unique {
+		tags = append(tags, "unique")
+	}
+	for _, u := range c.Uniques {
+		tags = append(tags, fmt.Sprintf("uniqueIndex:%s", u))
+	}
+	if c.Index {
+		tags = append(tags, "index")
+	}
+
+	// Add user-defined tags
+	for k, v := range c.Tags {
+		tags = append(tags, fmt.Sprintf("%s:%s", k, v))
+	}
+	if len(tags) == 0 {
+		return ""
+	}
+	return "`gorm:\"" + strings.Join(tags, ";") + "\"`"
+}
+func (c *Column) SetModelType(typ string) {
+	c.modelType = typ
+}
+func (c *Column) ModelType() string {
+	if c.modelType != "" {
+		return c.modelType
+	}
+	return c.Type.String()
+}
