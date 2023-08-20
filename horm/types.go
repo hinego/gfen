@@ -38,6 +38,7 @@ type (
 		Validators []Validator
 		Relation   *Relation
 		modelType  string
+		Enum       []any
 	}
 	Table struct {
 		Name        string
