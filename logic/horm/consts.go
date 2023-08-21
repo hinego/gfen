@@ -58,7 +58,7 @@ func (r *{{ $.Name | title}}) getQuery() *Query  {
 	return Ctx(ctx)
 }
 func (r *{{ $.Name | title}}) Query() I{{ $.Name | title}}Do {
-	return r.getQuery().{{ .Name | title}}().Key(r.{{ .Primary }})
+	return r.getQuery().{{ .Name | title}}().ID(r.{{ .Primary }})
 }
 func (r *{{ $.Name | title}}) Delete() (info gen.ResultInfo,err error) {
 	return r.Query().Delete()
@@ -196,7 +196,7 @@ type I{{.Model}}Do interface {
 	Select(conds ...field.Expr) I{{.Model}}Do
 	Where(conds ...gen.Condition) I{{.Model}}Do
 
-	Key({{.Primary}} {{.PrimaryType}}) I{{.Model}}Do
+	ID({{.Primary}} {{.PrimaryType}}) I{{.Model}}Do
 	Get({{.Primary}} {{.PrimaryType}}) (*{{.Model}}, error)
 	MustGet({{.Primary}} {{.PrimaryType}}) *{{.Model}}
 	MustDelete({{.Primary}} {{.PrimaryType}}) (err error)
@@ -319,20 +319,20 @@ func (a {{.Table}}Do) Where(conds ...gen.Condition) I{{.Model}}Do {
 	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.Where(conds...)}
 }
 
-func (a {{.Table}}Do) Key({{.Primary}} {{.PrimaryType}}) I{{.Model}}Do {
+func (a {{.Table}}Do) ID({{.Primary}} {{.PrimaryType}}) I{{.Model}}Do {
 	return a.Where({{.Table}}s.{{.Primary}}.Eq({{.Primary}}))
 }
 func (a {{.Table}}Do) Get({{.Primary}} {{.PrimaryType}}) (*{{.Model}}, error) {
-	return a.Key({{.Primary}}).First()
+	return a.ID({{.Primary}}).First()
 }
 
 func (a {{.Table}}Do) MustGet({{.Primary}} {{.PrimaryType}}) *{{.Model}} {
-	data, _ := a.Key({{.Primary}}).First()
+	data, _ := a.ID({{.Primary}}).First()
 	return data
 }
 
 func (a {{.Table}}Do) MustDelete({{.Primary}} {{.PrimaryType}}) (err error) {
-	_, err = a.Key({{.Primary}}).Delete()
+	_, err = a.ID({{.Primary}}).Delete()
 	return
 }
 
