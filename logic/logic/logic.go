@@ -165,6 +165,9 @@ func (r *sLogic) parseFile(file string) (err error) {
 			if !ok {
 				continue
 			}
+			if !strings.HasPrefix(typeSpec.Name.Name, "s") {
+				continue
+			}
 			logic := &genx.Logic{
 				Folder: gstr.ReplaceByArray(filepath.Dir(file), []string{
 					"\\", "/",
