@@ -65,3 +65,9 @@ var faceMap = map[string]any{}
 func Register(name string, face any) {
 	faceMap[name] = face
 }`
+const importControllerTemplate = `package packed
+
+import ( {{range  .Imports}}
+	_ "{{$.Module}}/{{.}}" {{end}}
+)
+`

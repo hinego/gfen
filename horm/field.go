@@ -28,7 +28,12 @@ var (
 		Type:     decimal.Decimal{},
 	}
 	Bool = &Type{
-		Type: false,
+		Name:     "Bool",
+		Postgres: "boolean",
+		Mysql:    "tinyint(1)", // MySQL 使用 tinyint(1) 表示布尔值
+		Sqlite:   "INTEGER",    // SQLite 使用 INTEGER 表示布尔值，0 代表 false，非0 代表 true
+		Type:     false,
+		value:    nil,
 	}
 	Int = &Type{
 		Name:     "Int",

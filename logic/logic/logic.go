@@ -16,8 +16,9 @@ import (
 )
 
 type sLogic struct {
-	config *genx.LogicInput
-	data   map[string]*genx.LogicData
+	config  *genx.LogicInput
+	data    map[string]*genx.LogicData
+	imports map[string]string
 }
 
 func (r *sLogic) Parse(in *genx.LogicInput) (err error) {
@@ -39,11 +40,18 @@ func (r *sLogic) Parse(in *genx.LogicInput) (err error) {
 			}
 		}
 	}
+	if err = r.serviceLogicInit(); err != nil {
+		return err
+	}
 	log.Println("logic parse done")
-	//gfile.PutContents("d.json", gjson.MustEncodeString(r.data))
 	return err
 }
 func (r *sLogic) serviceRegInit(logic *genx.Logic) (err error) {
+	if r.imports == nil {
+		r.imports = make(map[string]string)
+	}
+	path := fmt.Sprintf("%s/%s", r.config.LogicPath, logic.Folder)
+	r.imports[path] = path
 	return ssr.Gen().Execute(&genx.Execute{
 		Code: registerTemplate,
 		File: fmt.Sprintf("%s/%s/%s.init.go", r.config.LogicPath, logic.Folder, logic.Base),
@@ -51,6 +59,16 @@ func (r *sLogic) serviceRegInit(logic *genx.Logic) (err error) {
 			"Base": logic.Base,
 			"Name": logic.Name,
 			"Path": r.config.ServicePath,
+		},
+		Must: true,
+	})
+}
+func (r *sLogic) serviceLogicInit() (err error) {
+	return ssr.Gen().Execute(&genx.Execute{
+		Code: importControllerTemplate,
+		File: fmt.Sprintf("internal/packed/logic.go"),
+		Data: map[string]any{
+			"Imports": r.imports,
 		},
 		Must: true,
 	})
@@ -80,6 +98,7 @@ func (r *sLogic) paddingData(data *genx.LogicData) {
 		main   = data.GetMain()
 		source = data.GetSource()
 	)
+	log.Println("source", source)
 	data.Main = main
 	data.Source = source
 	data.Data[main.Name] = main
