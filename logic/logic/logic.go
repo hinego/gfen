@@ -165,6 +165,10 @@ func (r *sLogic) parseFile(file string) (err error) {
 			if !ok {
 				continue
 			}
+			var only = fmt.Sprintf("s%v", strings.Title(gfile.Basename(filepath.Dir(file))))
+			if typeSpec.Name.Name != only {
+				continue
+			}
 			if !strings.HasPrefix(typeSpec.Name.Name, "s") {
 				continue
 			}
