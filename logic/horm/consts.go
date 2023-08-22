@@ -199,6 +199,8 @@ type I{{.Model}}Do interface {
 	With{{.Name | title}}() I{{$.Model}}Do {{end}}
 	GetFieldByName(fieldName string) (field.OrderExpr, bool)
 	GetField(fieldName string) (any, bool)
+	Query(face queryFace) (err error)
+	WhereRaw(data any) I{{$.Model}}Do
 }
 
 type {{.Table}}Preload struct{  {{range .Relation}}
@@ -210,8 +212,22 @@ type {{.Table}}Do struct{
 	table string
 	fieldMap map[string]any
 }
+func (a {{.Table}}Do) Query(face queryFace) (err error) {
+	data := &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao: a.Dao}
+	face.SetFun(a.GetFieldByName)
+	var result any
+	var total int64
+	if result, total, err = data.Order(face.GetOrder()...).WhereRaw(face.GetWhere()).FindByPage(face.GetOffset(), face.GetSize()); err != nil {
+		return err
+	}
+	face.SetData(result)
+	face.SetTotal(total)
+	return
+}
 
-
+func (a {{.Table}}Do) WhereRaw(data any) I{{$.Model}}Do {
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao: a.Dao.WhereRaw(data)}
+}
 func (a {{.Table}}Do) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 	_f, ok := a.fieldMap[fieldName]
 	if !ok || _f == nil {
@@ -232,7 +248,7 @@ func (a {{.Table}}Do) GetField(fieldName string) (any, bool) {
 {{range .Relation}}
 func (a {{$.Table}}Do) With{{.Name | title}}() I{{$.Model}}Do {
 	a.preload.{{.Name}} = true
-	return &{{$.Table}}Do{preload: a.preload, Dao:a.Dao.Debug()}
+	return &{{$.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Debug()}
 }
 {{end}}
 
@@ -249,11 +265,11 @@ func (a {{.Table}}Do) doPreload(data ...*{{.Table | title}}) (err error) {
 }
 
 func (a {{.Table}}Do) Debug() I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.Debug()}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Debug()}
 }
 
 func (a {{.Table}}Do) WithContext(ctx context.Context) I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.WithContext(ctx)}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.WithContext(ctx)}
 }
 
 func (a {{.Table}}Do) ReadDB() I{{.Model}}Do {
@@ -265,31 +281,31 @@ func (a {{.Table}}Do) WriteDB() I{{.Model}}Do {
 }
 
 func (a {{.Table}}Do) Session(config *gorm.Session) I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.Session(config)}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Session(config)}
 }
 
 func (a {{.Table}}Do) Clauses(conds ...clause.Expression) I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.Clauses(conds...)}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Clauses(conds...)}
 }
 
 func (a {{.Table}}Do) Returning(value interface{}, columns ...string) I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.Returning(value, columns...)}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Returning(value, columns...)}
 }
 
 func (a {{.Table}}Do) Not(conds ...gen.Condition) I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.Not(conds...)}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Not(conds...)}
 }
 
 func (a {{.Table}}Do) Or(conds ...gen.Condition) I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.Or(conds...)}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Or(conds...)}
 }
 
 func (a {{.Table}}Do) Select(conds ...field.Expr) I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.Select(conds...)}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Select(conds...)}
 }
 
 func (a {{.Table}}Do) Where(conds ...gen.Condition) I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.Where(conds...)}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Where(conds...)}
 }
 
 func (a {{.Table}}Do) ID({{.Primary}} {{.PrimaryType}}) I{{.Model}}Do {
@@ -314,51 +330,51 @@ func (a {{.Table}}Do) Exists(subquery interface{ UnderlyingDB() *gorm.DB }) I{{.
 }
 
 func (a {{.Table}}Do) Order(conds ...field.Expr) I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.Order(conds...)}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Order(conds...)}
 }
 
 func (a {{.Table}}Do) Distinct(cols ...field.Expr) I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.Distinct(cols...)}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Distinct(cols...)}
 }
 
 func (a {{.Table}}Do) Omit(cols ...field.Expr) I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.Omit(cols...)}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Omit(cols...)}
 }
 
 func (a {{.Table}}Do) Join(table schema.Tabler, on ...field.Expr) I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.Join(table, on...)}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Join(table, on...)}
 }
 
 func (a {{.Table}}Do) LeftJoin(table schema.Tabler, on ...field.Expr) I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.LeftJoin(table, on...)}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.LeftJoin(table, on...)}
 }
 
 func (a {{.Table}}Do) RightJoin(table schema.Tabler, on ...field.Expr) I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.RightJoin(table, on...)}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.RightJoin(table, on...)}
 }
 
 func (a {{.Table}}Do) Group(cols ...field.Expr) I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.Group(cols...)}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Group(cols...)}
 }
 
 func (a {{.Table}}Do) Having(conds ...gen.Condition) I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.Having(conds...)}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Having(conds...)}
 }
 
 func (a {{.Table}}Do) Limit(limit int) I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.Limit(limit)}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Limit(limit)}
 }
 
 func (a {{.Table}}Do) Offset(offset int) I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.Offset(offset)}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Offset(offset)}
 }
 
 func (a {{.Table}}Do) Scopes(funcs ...func(gen.Dao) gen.Dao) I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.Scopes(funcs...)}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Scopes(funcs...)}
 }
 
 func (a {{.Table}}Do) Unscoped() I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.Unscoped()}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Unscoped()}
 }
 
 func (a {{.Table}}Do) Create(values ...*{{.Model}}) error {
@@ -454,11 +470,11 @@ func (a {{.Table}}Do) FindInBatches(result *[]*{{.Model}}, batchSize int, fc fun
 }
 
 func (a {{.Table}}Do) Attrs(attrs ...field.AssignExpr) I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.Attrs(attrs...)}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Attrs(attrs...)}
 }
 
 func (a {{.Table}}Do) Assign(attrs ...field.AssignExpr) I{{.Model}}Do {
-	return &{{.Table}}Do{preload: a.preload, Dao:a.Dao.Assign(attrs...)}
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Assign(attrs...)}
 }
 
 func (a {{.Table}}Do) Joins(fields ...field.RelationField) I{{.Model}}Do {
@@ -466,7 +482,7 @@ func (a {{.Table}}Do) Joins(fields ...field.RelationField) I{{.Model}}Do {
 	for _, _f := range fields {
 		data.Joins(_f)
 	}
-	return &{{.Table}}Do{preload: a.preload, Dao:data}	
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:data}	
 }
 
 func (a {{.Table}}Do) Preload(fields ...field.RelationField) I{{.Model}}Do {
@@ -474,7 +490,7 @@ func (a {{.Table}}Do) Preload(fields ...field.RelationField) I{{.Model}}Do {
 	for _, _f := range fields {
 		data.Preload(_f)
 	}
-	return &{{.Table}}Do{preload: a.preload, Dao:data}		
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:data}		
 }
 
 func (a {{.Table}}Do) FirstOrInit() (*{{.Model}}, error) {
@@ -535,11 +551,24 @@ import (
 	"gorm.io/gen"
 	"gorm.io/gorm"
 	"gorm.io/plugin/dbresolver"
+	"gorm.io/gen/field"
+
 )
 
 var (
 	_db          *gorm.DB
 ) 
+
+type queryFace interface {
+	GetOffset() int
+	GetSize() int
+	GetOrder() (data []field.Expr)
+	GetWhere() map[string]any
+	SetFun(fun func(fieldName string) (field.OrderExpr, bool))
+	SetData(data any)
+	SetTotal(total int64)
+}
+
 {{range .Table}}
 func Query{{ .Name | title}}() I{{ .Name | title}}Do {
 	return new{{ .Name | title}}(_db)
