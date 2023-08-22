@@ -68,10 +68,10 @@ func (r *sGen) Execute(in *genx.Execute) (err error) {
 	}
 	return gfile.PutContents(in.File, string(data))
 }
-func (r *sGen) ClearPath(paths ...string) {
-	r.Clear("*.go", paths...)
+func (r *sGen) ClearPath(keep string, paths ...string) {
+	r.Clear(keep, "*.go", paths...)
 }
-func (r *sGen) Clear(pattern string, paths ...string) {
+func (r *sGen) Clear(keep string, pattern string, paths ...string) {
 	if pattern == "" {
 		pattern = "*.go"
 	}
@@ -80,8 +80,10 @@ func (r *sGen) Clear(pattern string, paths ...string) {
 			continue
 		} else {
 			for _, file := range files {
-				if _, ok := r.Files[file]; !ok {
-					gfile.Remove(file)
+				if !strings.HasSuffix(file, keep) {
+					if _, ok := r.Files[file]; !ok {
+						gfile.Remove(file)
+					}
 				}
 			}
 		}
@@ -91,8 +93,10 @@ func (r *sGen) Clear(pattern string, paths ...string) {
 			continue
 		} else {
 			for _, file := range files {
-				if _, ok := r.Files[file]; !ok {
-					gfile.Remove(file)
+				if !strings.HasSuffix(file, keep) {
+					if _, ok := r.Files[file]; !ok {
+						gfile.Remove(file)
+					}
 				}
 			}
 		}

@@ -2,6 +2,7 @@ package logic
 
 import (
 	"fmt"
+	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/hinego/gfen/genx"
@@ -50,8 +51,12 @@ func (r *sLogic) serviceRegInit(logic *genx.Logic) (err error) {
 	if r.imports == nil {
 		r.imports = make(map[string]string)
 	}
+	if logic.Main && !strings.HasSuffix(logic.Name, "_") {
+		return
+	}
 	path := fmt.Sprintf("%s/%s", r.config.LogicPath, logic.Folder)
 	r.imports[path] = path
+	log.Println("data", gjson.MustEncodeString(logic))
 	return ssr.Gen().Execute(&genx.Execute{
 		Code: registerTemplate,
 		File: fmt.Sprintf("%s/%s/%s.init.go", r.config.LogicPath, logic.Folder, logic.Base),
@@ -60,7 +65,7 @@ func (r *sLogic) serviceRegInit(logic *genx.Logic) (err error) {
 			"Name": logic.Name,
 			"Path": r.config.ServicePath,
 		},
-		Must: true,
+		Must: false,
 	})
 }
 func (r *sLogic) serviceLogicInit() (err error) {
@@ -98,7 +103,6 @@ func (r *sLogic) paddingData(data *genx.LogicData) {
 		main   = data.GetMain()
 		source = data.GetSource()
 	)
-	log.Println("source", source)
 	data.Main = main
 	data.Source = source
 	data.Data[main.Name] = main
@@ -274,6 +278,9 @@ func (r *sLogic) exprToString(expr ast.Expr, imports map[string]string) (string,
 	switch e := expr.(type) {
 	case *ast.Ident:
 		return e.Name, ""
+	case *ast.Ellipsis:
+		t, pkg := r.exprToString(e.Elt, imports)
+		return "..." + t, pkg
 	case *ast.SelectorExpr:
 		ident, ok := e.X.(*ast.Ident)
 		if !ok {
@@ -286,6 +293,43 @@ func (r *sLogic) exprToString(expr ast.Expr, imports map[string]string) (string,
 	case *ast.ArrayType:
 		t, pkg := r.exprToString(e.Elt, imports)
 		return "[]" + t, pkg
+	case *ast.FuncType:
+		// 处理函数类型
+		params := []string{}
+		for _, field := range e.Params.List {
+			t, _ := r.exprToString(field.Type, imports)
+			// 如果有多个名称与同一类型关联，例如: x, y int
+			if len(field.Names) == 0 {
+				params = append(params, t)
+			} else {
+				for _ = range field.Names {
+					params = append(params, t)
+				}
+			}
+		}
+		results := []string{}
+		if e.Results != nil {
+			for _, field := range e.Results.List {
+				t, _ := r.exprToString(field.Type, imports)
+				if len(field.Names) == 0 {
+					results = append(results, t)
+				} else {
+					for _ = range field.Names {
+						results = append(results, t)
+					}
+				}
+			}
+		}
+		return fmt.Sprintf("func(%s) %s", strings.Join(params, ", "), strings.Join(results, ", ")), ""
+	case *ast.MapType:
+		keyType, _ := r.exprToString(e.Key, imports)
+		valueType, _ := r.exprToString(e.Value, imports)
+		return fmt.Sprintf("map[%s]%s", keyType, valueType), ""
+	case *ast.ChanType:
+		valueType, _ := r.exprToString(e.Value, imports)
+		return "chan " + valueType, "" // 注意，这仅处理简单的channel类型，可能需要扩展以处理发送和接收的方向。
+	case *ast.ParenExpr:
+		return r.exprToString(e.X, imports)
 	default:
 		return "unknown", ""
 	}

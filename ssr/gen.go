@@ -12,8 +12,8 @@ import (
 type (
 	IGen interface {
 		Execute(in *genx.Execute) (err error)
-		ClearPath(paths ...string)
-		Clear(pattern string, paths ...string)
+		ClearPath(keep string, paths ...string)
+		Clear(keep string, pattern string, paths ...string)
 		GetModule() string
 		Path(paths ...string) string
 	}

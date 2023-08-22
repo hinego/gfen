@@ -16,7 +16,7 @@ func Migrate(db *gorm.DB) (err error) {
 {{range .Table}}
 type {{ .Name }} struct { {{ range .Column }} {{if .Title}}
 	{{ .Title }} {{ .Type }} {{ .Tag }} {{end}} {{if .IsBelongsTo}}
-	{{ .Relation.Name | title }} *{{ .Relation.Table }} {{ .Relation.Tag }} {{end}}
+	{{ .Relation.Name | title }} *{{ .Relation.RefTable }} {{ .Relation.Tag }} {{end}}
 {{- end }}
 }
 {{end}}
@@ -121,62 +121,14 @@ import (
 
 func new{{.Model}}(db *gorm.DB, opts ...gen.DOOption) I{{.Model}}Do {
 	do := gen.NewDo(db, &{{.Model}}{})
-	_{{.Table}} := {{.Table}}{}
-	_{{.Table}}.{{.Table}}Do.Dao = &do
-	_{{.Table}}.table = _{{.Table}}.{{.Table}}Do.TableName()
-	_{{.Table}}.fillFieldMap()
-	return &_{{.Table}}
+	_{{.Table}}Do := {{.Table}}Do{}
+	_{{.Table}}Do.Dao = &do
+	_{{.Table}}Do.table = _{{.Table}}Do.TableName()
+	_{{.Table}}Do.fieldMap = map[string]any{ {{range .Column}}
+		"{{.Name}}":field.New{{.Type.Name}}(_{{$.Table}}Do.table, "{{.Name}}"), {{end}}
+	} 
+	return &_{{.Table}}Do
 }
-
-type {{.Table}} struct {
-	{{.Table}}Do
-	table string
-	fieldMap map[string]any
-}
-
-
-func (a *{{.Table}}) Table(newTableName string) *{{.Table}} {
-	a.{{.Table}}Do.UseTable(newTableName)
-	return a.updateTableName(newTableName)
-}
-
-func (a *{{.Table}}) updateTableName(table string) *{{.Table}} {
-	a.table = table
-	return a
-}
-
-func (a *{{.Table}}) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
-	_f, ok := a.fieldMap[fieldName]
-	if !ok || _f == nil {
-		return nil, false
-	}
-	_oe, ok := _f.(field.OrderExpr)
-	return _oe, ok
-}
-
-func (a *{{.Table}}) GetField(fieldName string) (any, bool) {
-	_f, ok := a.fieldMap[fieldName]
-	if !ok || _f == nil {
-		return nil, false
-	}
-	return _f, ok
-}
-
-func (a *{{.Table}}) fillFieldMap() {
-	a.fieldMap = make(map[string]any) {{range .Column}}
-	a.fieldMap["{{.Name}}"] = field.New{{.Type.Name}}(a.table, "{{.Name}}") {{end}}
-}
-
-func (a *{{.Table}}) clone(db *gorm.DB) *{{.Table}} {
-	a.{{.Table}}Do.ReplaceConnPool(db.Statement.ConnPool)
-	return a
-}
-
-func (a *{{.Table}}) replaceDB(db *gorm.DB) *{{.Table}} {
-	a.{{.Table}}Do.ReplaceDB(db)
-	return a
-}
-
 
 
 type I{{.Model}}Do interface { 
@@ -245,7 +197,8 @@ type I{{.Model}}Do interface {
 	UnderlyingDB() *gorm.DB
 	schema.Tabler {{range .Relation}}
 	With{{.Name | title}}() I{{$.Model}}Do {{end}}
-	
+	GetFieldByName(fieldName string) (field.OrderExpr, bool)
+	GetField(fieldName string) (any, bool)
 }
 
 type {{.Table}}Preload struct{  {{range .Relation}}
@@ -254,6 +207,26 @@ type {{.Table}}Preload struct{  {{range .Relation}}
 type {{.Table}}Do struct{ 
 	gen.Dao 
 	preload {{.Table}}Preload
+	table string
+	fieldMap map[string]any
+}
+
+
+func (a {{.Table}}Do) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
+	_f, ok := a.fieldMap[fieldName]
+	if !ok || _f == nil {
+		return nil, false
+	}
+	_oe, ok := _f.(field.OrderExpr)
+	return _oe, ok
+}
+
+func (a {{.Table}}Do) GetField(fieldName string) (any, bool) {
+	_f, ok := a.fieldMap[fieldName]
+	if !ok || _f == nil {
+		return nil, false
+	}
+	return _f, ok
 }
 
 {{range .Relation}}
