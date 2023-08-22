@@ -44,6 +44,7 @@ type (
 		Primary    bool              //是否主键
 		Increment  bool              //是否自增
 		Step       int               //自增步长
+		Sensitive  bool              //是否敏感字段
 		Validators []Validator
 		Relation   *Relation
 		modelType  string

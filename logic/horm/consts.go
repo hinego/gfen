@@ -200,7 +200,7 @@ type I{{.Model}}Do interface {
 	GetFieldByName(fieldName string) (field.OrderExpr, bool)
 	GetField(fieldName string) (any, bool)
 	Query(face queryFace) (err error)
-	WhereRaw(data any) I{{$.Model}}Do
+	WhereRaw(data any, args ...any) I{{$.Model}}Do
 }
 
 type {{.Table}}Preload struct{  {{range .Relation}}
@@ -225,8 +225,8 @@ func (a {{.Table}}Do) Query(face queryFace) (err error) {
 	return
 }
 
-func (a {{.Table}}Do) WhereRaw(data any) I{{$.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao: a.Dao.WhereRaw(data)}
+func (a {{.Table}}Do) WhereRaw(data any, args ...any) I{{$.Model}}Do {
+	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao: a.Dao.WhereRaw(data,args...)}
 }
 func (a {{.Table}}Do) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 	_f, ok := a.fieldMap[fieldName]

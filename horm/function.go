@@ -133,7 +133,11 @@ func (c *Column) Tag() string {
 	if len(tags) == 0 {
 		return ""
 	}
+
 	tag := fmt.Sprintf(`gorm:"%v" json:"%v"`, strings.Join(tags, ";"), c.Name)
+	if c.Sensitive {
+		tag = fmt.Sprintf(`gorm:"%v" json:"-"`, strings.Join(tags, ";"))
+	}
 	return fmt.Sprintf("`%v`", tag)
 }
 func (c *Column) SetModelType(typ string) {

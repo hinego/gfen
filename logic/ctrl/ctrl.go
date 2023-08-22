@@ -184,15 +184,30 @@ func (r *sCtrl) controllerFunc(data *genx.Fun) (err error) {
 		function = data.Function
 		input    = &genx.Execute{
 			Code: controllerTemplate,
-			Data: map[string]any{
+			Data: map[string]any{},
+			Map: map[string]any{
 				"ApiName":      api.Name,
 				"VersionName":  version.Name,
 				"FileName":     file.Name,
 				"FunctionName": function.Name,
+				"Code":         function.Code,
+				"Packages": []string{
+					"github.com/gogf/gf/v2/errors/gcode",
+					"github.com/gogf/gf/v2/errors/gerror",
+				},
 			},
-			File: fmt.Sprintf(r.controller+"/%s/%s/%s/%s_%s_%s_%s.go", api.Name, file.Name, version.Name, api.Name, file.Name, version.Name, function.Name),
+			Replace: map[string]string{},
+			Must:    function.Must,
+			File:    fmt.Sprintf(r.controller+"/%s/%s/%s/%s_%s_%s_%s.go", api.Name, file.Name, version.Name, api.Name, file.Name, version.Name, function.Name),
 		}
 	)
+	if function.Code != nil {
+		input.Replace["#code#"] = function.Code.Code
+		input.Map["Packages"] = function.Code.Import()
+		for k, v := range function.Code.Data {
+			input.Map[k] = v
+		}
+	}
 	return ssr.Gen().Execute(input)
 }
 func (r *sCtrl) apiFunStruct(data *genx.Fun) (err error) {
@@ -211,8 +226,23 @@ func (r *sCtrl) apiFunStruct(data *genx.Fun) (err error) {
 				Function:    fun,
 				VersionName: version.Name,
 			},
+			Map:  map[string]any{},
 			File: fmt.Sprintf(r.api+"/%s/%s/%s/%s_%s_%s_%s.go", api.Name, version.Name, file.Name, api.Name, version.Name, file.Name, fun.Name),
+			Must: fun.Must,
 		}
 	)
+	if fun.Code != nil {
+		input.Map = map[string]any{
+			"Packages": fun.Code.ApiImport(),
+			"Request":  fun.Code.Request(),
+			"Response": fun.Code.Response(),
+		}
+	} else {
+		input.Map = map[string]any{
+			"Packages": make([]string, 0),
+			"Request":  make([]string, 0),
+			"Response": make([]string, 0),
+		}
+	}
 	return ssr.Gen().Execute(input)
 }

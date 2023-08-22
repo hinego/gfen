@@ -16,29 +16,31 @@ const structTemplate = `
 package {{.VersionName}}
 
 import (
-	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/frame/g" {{range .Packages}}
+	"{{.}}"{{end}}
 )
 
 type {{.Name}}Req struct {
-	g.Meta ` + "`path:\"{{.Path}}\" tags:\"{{.Tags}}\" method:\"{{.Method}}\" summary:\"{{.Summary}}\"`" + `
+	g.Meta ` + "`path:\"{{.Path}}\" tags:\"{{.Tags}}\" method:\"{{.Method}}\" summary:\"{{.Summary}}\"`" + ` {{range .Request}}
+	{{.}} {{end}}
 }
 type {{.Name}}Res struct {
-	g.Meta ` + "`mime:\"{{.Mime}}\" example:\"{{.Default}}\"`" + `
+	g.Meta ` + "`mime:\"{{.Mime}}\" example:\"{{.Default}}\"`" + ` {{range .Response}}
+	{{.}} {{end}}
 }
 `
 const controllerTemplate = `package {{.ApiName}}
 
 import (
 	"context"
-
-	"github.com/gogf/gf/v2/errors/gcode"
-	"github.com/gogf/gf/v2/errors/gerror"
-
+	{{range .Packages}}
+	"{{.}}"{{end}}
 	{{.FileName}}{{.VersionName | title}} "github.com/sucold/starter/api/{{.ApiName}}/{{.VersionName}}/{{.FileName}}"
 )
 
-func (r *controller{{title .VersionName}}) {{title .FunctionName}}(ctx context.Context, req *{{.FileName}}{{.VersionName | title}}.{{title .FunctionName}}Req) (res *{{.FileName}}{{.VersionName | title}}.{{title .FunctionName}}Res, err error) {
-	return nil, gerror.NewCode(gcode.CodeNotImplemented)
+func (r *controller{{title .VersionName}}) {{title .FunctionName}}(ctx context.Context, req *{{.FileName}}{{.VersionName | title}}.{{title .FunctionName}}Req) (res *{{.FileName}}{{.VersionName | title}}.{{title .FunctionName}}Res, err error) { {{if .Code}} 
+	#code# {{else}}
+	return nil, gerror.NewCode(gcode.CodeNotImplemented) {{end}}
 }
 `
 const initTemplate = `package {{.ApiName}}

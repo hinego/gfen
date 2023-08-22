@@ -3,6 +3,7 @@ package gen
 import (
 	"bytes"
 	"github.com/gogf/gf/v2/os/gfile"
+	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
 	"github.com/hinego/gfen/genx"
 	"github.com/hinego/gfen/horm"
@@ -42,6 +43,9 @@ func (r *sGen) Execute(in *genx.Execute) (err error) {
 		data []byte
 	)
 	log.Println("generate", in.File)
+	if len(in.Replace) > 0 {
+		in.Code = gstr.ReplaceByMap(in.Code, in.Replace)
+	}
 	if code, err = template.New("code").Funcs(funcMap).Parse(in.Code); err != nil {
 		return
 	}

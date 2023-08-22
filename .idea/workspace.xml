@@ -4,9 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d065a5b0-eb0b-4655-a888-a63a313cc1f0" name="Changes" comment="update">
+    <list default="true" id="d065a5b0-eb0b-4655-a888-a63a313cc1f0" name="Changes" comment="支持快捷find查询">
+      <change afterPath="$PROJECT_DIR$/test/router.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/genx/types.go" beforeDir="false" afterPath="$PROJECT_DIR$/genx/types.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/horm/function.go" beforeDir="false" afterPath="$PROJECT_DIR$/horm/function.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/horm/types.go" beforeDir="false" afterPath="$PROJECT_DIR$/horm/types.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logic/ctrl/consts.go" beforeDir="false" afterPath="$PROJECT_DIR$/logic/ctrl/consts.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logic/ctrl/ctrl.go" beforeDir="false" afterPath="$PROJECT_DIR$/logic/ctrl/ctrl.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/logic/dao/dao.init.go" beforeDir="false" afterPath="$PROJECT_DIR$/logic/dao/dao.init.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logic/gen/gen.go" beforeDir="false" afterPath="$PROJECT_DIR$/logic/gen/gen.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/logic/horm/consts.go" beforeDir="false" afterPath="$PROJECT_DIR$/logic/horm/consts.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/logic/horm/horm.init.go" beforeDir="false" afterPath="$PROJECT_DIR$/logic/horm/horm.init.go" afterDir="false" />
     </list>
@@ -91,7 +98,7 @@
       <workItem from="1692582726297" duration="2703000" />
       <workItem from="1692596651127" duration="561000" />
       <workItem from="1692597860071" duration="6668000" />
-      <workItem from="1692690542539" duration="2569000" />
+      <workItem from="1692690542539" duration="8070000" />
     </task>
     <task id="LOCAL-00001" summary="1. 修复潜在的Bug（当返回值未命名时无法获取）&#10;2. 实现了文件清理功能（在生成完成后可以设置需要清理的文件目录，只要此目录内包含本次未生成的文件将直接删除）">
       <option name="closed" value="true" />
@@ -229,7 +236,15 @@
       <option name="project" value="LOCAL" />
       <updated>1692687741093</updated>
     </task>
-    <option name="localTasksCounter" value="18" />
+    <task id="LOCAL-00018" summary="支持快捷find查询">
+      <option name="closed" value="true" />
+      <created>1692694199043</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1692694199043</updated>
+    </task>
+    <option name="localTasksCounter" value="19" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -261,7 +276,8 @@
     <MESSAGE value="仅检查s开头的struct的方法" />
     <MESSAGE value="仅检查sName" />
     <MESSAGE value="update" />
-    <option name="LAST_COMMIT_MESSAGE" value="update" />
+    <MESSAGE value="支持快捷find查询" />
+    <option name="LAST_COMMIT_MESSAGE" value="支持快捷find查询" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
