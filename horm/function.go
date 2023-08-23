@@ -81,6 +81,12 @@ func (c *Relation) Reverse() *Relation {
 	if c.Array() {
 		typ = HasMany
 	}
+	if c.RefName == "" {
+		c.RefName = ToName(c.Table)
+		if !c.Array() {
+			c.RefName = c.RefName + "s"
+		}
+	}
 	return &Relation{
 		Name:      c.RefName,
 		RefName:   c.Name,

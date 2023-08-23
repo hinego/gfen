@@ -1,13 +1,16 @@
 package genx
 
 import (
+	"github.com/gogf/gf/v2/text/gstr"
+	"github.com/hinego/gfen/horm"
 	"reflect"
 )
 
 type (
 	Field struct {
-		Name string
-		Type any
+		Name    string
+		Type    any
+		Package string
 	}
 	Code struct {
 		Req  []*Field       //请求结构体的参数
@@ -96,33 +99,41 @@ func (r *Code) Import() []string {
 func (r *Code) ApiImport() []string {
 	var data = make(map[string]bool)
 	for _, use := range append(r.Req, r.Res...) {
-		ss := getPack(use.Type)
-		if ss != "" {
-			data[ss] = true
+		switch use.Type.(type) {
+		case string:
+			data[use.Package] = true
+		default:
+			ss := getPack(use.Type)
+			if ss != "" {
+				data[ss] = true
+			}
 		}
+
 	}
 	return toSlice(data)
 }
-func (r *Code) Request() []string {
+func (r *Code) Request(keys map[string]string) []string {
 	var data = make(map[string]bool)
 	for _, v := range r.Req {
 		var name string
 		if v.Name != "" {
-			name = v.Name + " "
+			name = horm.ToName(v.Name) + " "
 		}
 		name += getName(v.Type)
+		name = gstr.ReplaceByMap(name, keys)
 		data[name] = true
 	}
 	return toSlice(data)
 }
-func (r *Code) Response() []string {
+func (r *Code) Response(keys map[string]string) []string {
 	var data = make(map[string]bool)
 	for _, v := range r.Res {
 		var name string
 		if v.Name != "" {
-			name = v.Name + " "
+			name = horm.ToName(v.Name) + " "
 		}
 		name += getName(v.Type)
+		name = gstr.ReplaceByMap(name, keys)
 		data[name] = true
 	}
 	return toSlice(data)
@@ -141,9 +152,14 @@ func getPack(t any) string {
 	return ref.Type().PkgPath()
 }
 func getName(t any) string {
-	ref := reflect.ValueOf(t)
-	if ref.Kind() == reflect.Ptr {
-		return "*" + ref.Elem().Type().String()
+	switch e := t.(type) {
+	case string:
+		return e
+	default:
+		ref := reflect.ValueOf(t)
+		if ref.Kind() == reflect.Ptr {
+			return "*" + ref.Elem().Type().String()
+		}
+		return ref.Type().String()
 	}
-	return ref.Type().String()
 }

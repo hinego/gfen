@@ -8,7 +8,7 @@ var (
 
 var (
 	Model = Mixin{
-		Column: []Column{
+		Column: []*Column{
 			{
 				Name:      "id",
 				Type:      Int64,

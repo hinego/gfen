@@ -2,6 +2,7 @@ package gen
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
@@ -9,7 +10,11 @@ import (
 	"github.com/hinego/gfen/horm"
 	"go/format"
 	"golang.org/x/mod/modfile"
+	"io"
+	"io/ioutil"
 	"log"
+	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 )
@@ -105,6 +110,9 @@ func (r *sGen) Clear(keep string, pattern string, paths ...string) {
 			}
 		}
 	}
+	for _, path := range paths {
+		removeEmptyDirs(path)
+	}
 }
 func (r *sGen) GetModule() string {
 	if r.module != "" {
@@ -121,4 +129,59 @@ func (r *sGen) Path(paths ...string) string {
 	paths = append([]string{r.GetModule()}, paths...)
 	code := strings.Join(paths, "/")
 	return strings.ReplaceAll(code, "//", "/")
+}
+func removeEmptyDirs(dir string) error {
+	isEmpty, err := isDirEmpty(dir)
+	if err != nil {
+		return err
+	}
+
+	// 如果当前目录为空，删除它
+	if isEmpty {
+		fmt.Println("Removing:", dir)
+		return os.Remove(dir)
+	}
+
+	// 否则，递归地检查其子目录
+	subdirs, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+
+	for _, d := range subdirs {
+		if d.IsDir() {
+			subDirPath := filepath.Join(dir, d.Name())
+			if err := removeEmptyDirs(subDirPath); err != nil {
+				return err
+			}
+		}
+	}
+
+	// 再次检查当前目录是否为空，因为子目录可能已经被删除
+	isEmpty, err = isDirEmpty(dir)
+	if err != nil {
+		return err
+	}
+
+	if isEmpty {
+		fmt.Println("Removing:", dir)
+		return os.Remove(dir)
+	}
+
+	return nil
+}
+
+// 检查目录是否为空
+func isDirEmpty(dir string) (bool, error) {
+	f, err := os.Open(dir)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+
+	_, err = f.Readdirnames(1) // Or f.Readdir(1)
+	if err == io.EOF {
+		return true, nil
+	}
+	return false, err
 }

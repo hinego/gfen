@@ -231,11 +231,15 @@ func (r *sCtrl) apiFunStruct(data *genx.Fun) (err error) {
 			Must: fun.Must,
 		}
 	)
+
 	if fun.Code != nil {
+		Map := map[string]string{
+			"{{FileName}}": strings.Title(file.Name),
+		}
 		input.Map = map[string]any{
 			"Packages": fun.Code.ApiImport(),
-			"Request":  fun.Code.Request(),
-			"Response": fun.Code.Response(),
+			"Request":  fun.Code.Request(Map),
+			"Response": fun.Code.Response(Map),
 		}
 	} else {
 		input.Map = map[string]any{

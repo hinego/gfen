@@ -23,6 +23,9 @@ type (
 		Foreign   string //外键的字段名
 		Reference string //外键引用的字段名 (通常是主键)
 		Unique    bool   //是否唯一
+		Desc      string
+		OnUpdate  string
+		OnDelete  string
 	}
 	Enum struct {
 		Name  string
@@ -31,7 +34,11 @@ type (
 	}
 	Enums struct {
 		Default any
-		Enums   []Enum
+		Enums   []*Enum
+	}
+	Check struct {
+		Name   string // CHECK约束的名称
+		Clause string // 验证条件
 	}
 	Column struct {
 		Name       string            //字段的名称
@@ -40,12 +47,13 @@ type (
 		Tags       map[string]string //给结构体的Tags
 		Index      bool              //此字段是否索引
 		Unique     bool              //此字段是否唯一
+		Checks     []*Check          //验证条件
 		Uniques    []string          //联合唯一索引 例如：[]string{"type_index"}
 		Primary    bool              //是否主键
 		Increment  bool              //是否自增
 		Step       int               //自增步长
 		Sensitive  bool              //是否敏感字段
-		Validators []Validator
+		Validators []*Validator
 		Relation   *Relation
 		modelType  string
 		Enums      *Enums
@@ -54,15 +62,15 @@ type (
 		Name        string
 		Primary     string //主键的字段名
 		PrimaryType string //主键的类型
-		Column      []Column
-		Mixin       []Mixin
+		Column      []*Column
+		Mixin       []*Mixin
 		Relation    map[string]*Relation
 	}
 	Mixin struct {
-		Column []Column
+		Column []*Column
 	}
 	Input struct {
-		Table []Table //模型
-		Path  string  //输出路径
+		Table []*Table //模型
+		Path  string   //输出路径
 	}
 )

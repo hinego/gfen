@@ -158,7 +158,7 @@ func (r *sHorm) gen() (err error) {
 func (r *sHorm) fill() {
 	for k, v := range r.Table {
 		if v.DefaultMixin() {
-			r.Table[k].Mixin = append(r.Table[k].Mixin, horm.Model)
+			r.Table[k].Mixin = append(r.Table[k].Mixin, &horm.Model)
 		}
 	}
 	for k, _ := range r.Table {
