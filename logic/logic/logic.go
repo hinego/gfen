@@ -141,7 +141,7 @@ func (r *sLogic) parseFile(file string) (err error) {
 	if err != nil {
 		return
 	}
-
+	serv := ssr.Gen().Path(r.config.ServicePath)
 	imports := make(map[string]string)
 	for _, i := range node.Imports {
 		// Trim quotes from paths
@@ -215,6 +215,11 @@ func (r *sLogic) parseFile(file string) (err error) {
 					if funcDecl.Type.Results != nil {
 						for _, field := range funcDecl.Type.Results.List {
 							t, pkg := r.exprToString(field.Type, imports)
+							if serv == pkg {
+								pkg = ""
+							}
+							ss := gfile.Basename(r.config.ServicePath)
+							t = strings.ReplaceAll(t, ss+".", "")
 							if len(field.Names) > 0 {
 								for _, name := range field.Names {
 									returns = append(returns, name.Name+" "+t)
@@ -322,9 +327,14 @@ func (r *sLogic) exprToString(expr ast.Expr, imports map[string]string) (string,
 		}
 		return fmt.Sprintf("func(%s) %s", strings.Join(params, ", "), strings.Join(results, ", ")), ""
 	case *ast.MapType:
-		keyType, _ := r.exprToString(e.Key, imports)
-		valueType, _ := r.exprToString(e.Value, imports)
-		return fmt.Sprintf("map[%s]%s", keyType, valueType), ""
+		keyType, keyPkg := r.exprToString(e.Key, imports)
+		valueType, valuePkg := r.exprToString(e.Value, imports)
+
+		// 优先返回value的pkg，如果value没有包名再返回key的pkg
+		if valuePkg != "" {
+			return fmt.Sprintf("map[%s]%s", keyType, valueType), valuePkg
+		}
+		return fmt.Sprintf("map[%s]%s", keyType, valueType), keyPkg
 	case *ast.ChanType:
 		valueType, _ := r.exprToString(e.Value, imports)
 		return "chan " + valueType, "" // 注意，这仅处理简单的channel类型，可能需要扩展以处理发送和接收的方向。

@@ -40,7 +40,7 @@ func (r *sGen) Execute(in *genx.Execute) (err error) {
 		buffer  bytes.Buffer
 		dataMap = map[string]any{}
 		funcMap = template.FuncMap{
-			"title":    strings.Title,
+			"title":    horm.ToName,
 			"lower":    strings.ToLower,
 			"basename": gfile.Basename,
 			"ToName":   horm.ToName,

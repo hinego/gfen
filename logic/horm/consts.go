@@ -16,7 +16,7 @@ func Migrate(db *gorm.DB) (err error) {
 {{range .Table}}
 type {{ .Name }} struct { {{ range .Column }} {{if .Title}}
 	{{ .Title }} {{ .Type }} {{ .Tag }} {{end}} {{if .IsBelongsTo}}
-	{{ .Relation.Name | title }} *{{ .Relation.RefTable }} {{ .Relation.Tag }} {{end}}
+	{{ .Relation.Name | ToName }} *{{ .Relation.RefTable }} {{ .Relation.Tag }} {{end}}
 {{- end }}
 }
 {{end}}
@@ -31,7 +31,7 @@ import (
 	{{ end }}
 )
 type edge{{ .Name | title}} struct { {{ range .Relation }} 
-	{{ .Name | title }} {{if .Array}}[]{{end}}*{{ .RefTable | title }} 
+	{{ .Name | ToName }} {{if .Array}}[]{{end}}*{{ .RefTable | title }} 
 {{- end }}
 }
 
@@ -64,23 +64,23 @@ func (r *{{ $.Name | title}}) Delete() (info gen.ResultInfo,err error) {
 	return r.Query().Delete()
 }
 {{ range .Relation }}
-func (r *{{ $.Name | title}}) Query{{ .Name | title }}() I{{ .RefTable | title }}Do {
+func (r *{{ $.Name | title}}) Query{{ .Name | ToName }}() I{{ .RefTable | title }}Do {
 	return Query{{ .RefTable | title }}().Where({{ .RefTable }}s.{{ .ReferenceName }}.Eq(r.{{ .ForeignName }}))
 }
 
-func (r *{{ $.Name | title}}) Get{{ .Name | title }}(update ...bool) (data {{if .Array}}[]{{end}}*{{ .RefTable | title }},err error) {
-	if len(update) == 0 && r.edges.{{ .Name | title }} != nil {
+func (r *{{ $.Name | title}}) Get{{ .Name | ToName }}(update ...bool) (data {{if .Array}}[]{{end}}*{{ .RefTable | title }},err error) {
+	if len(update) == 0 && r.edges.{{ .Name | ToName }} != nil {
 		return r.edges.{{ .Name | title }},nil
 	}
-	if r.edges.{{ .Name | title }}, err = r.Query{{ .Name | title }}().{{if .Array}}Find{{else}}First{{end}}(); err != nil {
+	if r.edges.{{ .Name | ToName }}, err = r.Query{{ .Name | ToName }}().{{if .Array}}Find{{else}}First{{end}}(); err != nil {
 		return nil, err
 	} else {
-		return r.edges.{{ .Name | title }}, nil
+		return r.edges.{{ .Name | ToName }}, nil
 	}
 }
 
-func (r *{{ $.Name | title}}) Get{{ .Name | title }}X(update ...bool) ({{if .Array}}[]{{end}}*{{ .RefTable | title }}) {
-	if data, err := r.Get{{ .Name | title }}(update...); err != nil {
+func (r *{{ $.Name | title}}) Get{{ .Name | ToName }}X(update ...bool) ({{if .Array}}[]{{end}}*{{ .RefTable | title }}) {
+	if data, err := r.Get{{ .Name | ToName }}(update...); err != nil {
 		panic(err)
 	} else {
 		return data
