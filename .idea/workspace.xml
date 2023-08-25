@@ -4,13 +4,11 @@
     <option name="autoReloadType" value="ALL" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d065a5b0-eb0b-4655-a888-a63a313cc1f0" name="Changes" comment="支持生成方法代码">
+    <list default="true" id="d065a5b0-eb0b-4655-a888-a63a313cc1f0" name="Changes" comment="修复">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/logic/dao/dao.init.go" beforeDir="false" afterPath="$PROJECT_DIR$/logic/dao/dao.init.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/logic/gen/gen.go" beforeDir="false" afterPath="$PROJECT_DIR$/logic/gen/gen.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/logic/horm/consts.go" beforeDir="false" afterPath="$PROJECT_DIR$/logic/horm/consts.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/logic/horm/horm.init.go" beforeDir="false" afterPath="$PROJECT_DIR$/logic/horm/horm.init.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/logic/logic/logic.go" beforeDir="false" afterPath="$PROJECT_DIR$/logic/logic/logic.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -291,7 +289,8 @@
     <MESSAGE value="update" />
     <MESSAGE value="支持快捷find查询" />
     <MESSAGE value="支持生成方法代码" />
-    <option name="LAST_COMMIT_MESSAGE" value="支持生成方法代码" />
+    <MESSAGE value="修复" />
+    <option name="LAST_COMMIT_MESSAGE" value="修复" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>

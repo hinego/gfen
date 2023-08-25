@@ -68,6 +68,18 @@ func (r *{{ $.Name | title}}) Query{{ .Name | ToName }}() I{{ .RefTable | title 
 	return Query{{ .RefTable | title }}().Where({{ .RefTable }}s.{{ .ReferenceName }}.Eq(r.{{ .ForeignName }}))
 }
 
+func (r *{{ $.Name | title}}) Load{{ .Name | ToName }}(fun ...func(do I{{ .RefTable | title }}Do) I{{ .RefTable | title }}Do) (err error) {
+	var do = r.Query{{ .Name | ToName }}()
+	for _, v := range fun {
+		do = v(do)
+	}
+	if r.edges.{{ .Name | ToName }}, err = do.{{if .Array}}Find{{else}}First{{end}}(); err != nil {
+		return 
+	} else {
+		return 
+	}
+}
+
 func (r *{{ $.Name | title}}) Get{{ .Name | ToName }}(update ...bool) (data {{if .Array}}[]{{end}}*{{ .RefTable | title }},err error) {
 	if len(update) == 0 && r.edges.{{ .Name | ToName }} != nil {
 		return r.edges.{{ .Name | title }},nil
@@ -196,7 +208,7 @@ type I{{.Model}}Do interface {
 	Returning(value interface{}, columns ...string) I{{.Model}}Do
 	UnderlyingDB() *gorm.DB
 	schema.Tabler {{range .Relation}}
-	With{{.Name | title}}() I{{$.Model}}Do {{end}}
+	With{{.Name | title}}(fun ...func(do I{{ .RefTable | title }}Do) I{{ .RefTable | title }}Do) I{{$.Model}}Do {{end}}
 	GetFieldByName(fieldName string) (field.OrderExpr, bool)
 	GetField(fieldName string) (any, bool)
 	Query(face queryFace) (err error)
@@ -204,7 +216,8 @@ type I{{.Model}}Do interface {
 }
 
 type {{.Table}}Preload struct{  {{range .Relation}}
-	{{.Name}} bool {{end}}
+	{{.Name | title }} bool 
+	{{.Name  | title }}Expr []func(do I{{ .RefTable | title }}Do) I{{ .RefTable | title }}Do{{end}}
 }
 type {{.Table}}Do struct{ 
 	gen.Dao 
@@ -246,8 +259,9 @@ func (a {{.Table}}Do) GetField(fieldName string) (any, bool) {
 }
 
 {{range .Relation}}
-func (a {{$.Table}}Do) With{{.Name | title}}() I{{$.Model}}Do {
-	a.preload.{{.Name}} = true
+func (a {{$.Table}}Do) With{{.Name | title}}(fun ...func(do I{{ .RefTable | title }}Do) I{{ .RefTable | title }}Do) I{{$.Model}}Do {
+	a.preload.{{.Name | title}} = true
+	a.preload.{{.Name | title}}Expr = append(a.preload.{{.Name | title}}Expr, fun...)
 	return &{{$.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Debug()}
 }
 {{end}}
@@ -255,8 +269,8 @@ func (a {{$.Table}}Do) With{{.Name | title}}() I{{$.Model}}Do {
 func (a {{.Table}}Do) doPreload(data ...*{{.Table | title}}) (err error) {
 	{{if .Relation}}
 	for _,v :=range data	{	{{range .Relation}}
-		if a.preload.{{.Name}} {
-			if _,err = v.Get{{.Name | title}}(); err != nil {
+		if a.preload.{{.Name | title}} {
+			if err = v.Load{{.Name | title}}(a.preload.{{.Name | title}}Expr...); err != nil {
 				return
 			}
 		} {{end}}
