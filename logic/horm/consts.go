@@ -1,5 +1,14 @@
 package horm
 
+const MappingTemplate = `package {{.Name}}
+
+import (
+	"{{.Module}}/internal/{{$.Dao}}"
+)
+var ( {{range .Table}}
+	{{ .Name | title}} = {{$.Dao}}.Query{{ .Name | title }} {{end}}
+)
+`
 const MigrateTemplate = `package migrate
 
 import (

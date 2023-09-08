@@ -26,6 +26,9 @@ func (r *sHorm) Generate(in *horm.Input) (err error) {
 	if err = r.migrate(); err != nil {
 		return err
 	}
+	if err = r.mapping(); err != nil {
+		return err
+	}
 
 	if err = r.dao(); err != nil {
 		return err
@@ -52,6 +55,18 @@ func (r *sHorm) migrate() (err error) {
 			"Imports": imports,
 		},
 		File: fmt.Sprintf("%s/migrate/migrate.gen.go", r.Path),
+		Must: true,
+	})
+}
+func (r *sHorm) mapping() (err error) {
+	return ssr.Gen().Execute(&genx.Execute{
+		Code: MappingTemplate,
+		Data: r.data(),
+		Map: map[string]any{
+			"Name": "db",
+			"Dao":  gfile.Basename(r.Path),
+		},
+		File: fmt.Sprintf("%s/db/db.gen.go", r.Path),
 		Must: true,
 	})
 }
