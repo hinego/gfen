@@ -2,11 +2,12 @@ package horm
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/hinego/gfen/genx"
 	"github.com/hinego/gfen/horm"
 	"github.com/hinego/gfen/ssr"
-	"strings"
 )
 
 type sHorm struct {
