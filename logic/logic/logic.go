@@ -36,6 +36,9 @@ func (r *sLogic) Parse(in *genx.LogicInput) (err error) {
 			return
 		}
 		for _, logic := range data.Data {
+			if len(logic.Funcs) == 0 {
+				continue
+			}
 			if err = r.serviceRegInit(logic); err != nil {
 				return
 			}

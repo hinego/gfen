@@ -3,13 +3,7 @@ package gen
 import (
 	"bytes"
 	"fmt"
-	"github.com/gogf/gf/v2/os/gfile"
-	"github.com/gogf/gf/v2/text/gstr"
-	"github.com/gogf/gf/v2/util/gconv"
-	"github.com/hinego/gfen/genx"
-	"github.com/hinego/gfen/horm"
 	"go/format"
-	"golang.org/x/mod/modfile"
 	"io"
 	"io/ioutil"
 	"log"
@@ -17,6 +11,13 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/gogf/gf/v2/os/gfile"
+	"github.com/gogf/gf/v2/text/gstr"
+	"github.com/gogf/gf/v2/util/gconv"
+	"github.com/hinego/gfen/genx"
+	"github.com/hinego/gfen/horm"
+	"golang.org/x/mod/modfile"
 )
 
 type sGen struct {
@@ -34,7 +35,6 @@ func (r *sGen) Execute(in *genx.Execute) (err error) {
 		log.Println("skipfile", in.File)
 		return nil
 	}
-	//asd
 	var (
 		code    *template.Template
 		buffer  bytes.Buffer
@@ -63,6 +63,7 @@ func (r *sGen) Execute(in *genx.Execute) (err error) {
 		dataMap[k] = v
 	}
 	if err = code.Execute(&buffer, dataMap); err != nil {
+
 		return
 	}
 	if data, err = format.Source(buffer.Bytes()); err != nil {
