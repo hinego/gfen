@@ -25,7 +25,7 @@ func Migrate(db *gorm.DB) (err error) {
 {{range .Table}}
 type {{ .Name }} struct { {{ range .Column }} {{if .Title}}
 	{{ .Title }} {{ .Type }} {{ .Tag }} {{end}} {{if .IsBelongsTo}}
-	{{ .Relation.Name | ToName }} *{{ .Relation.RefTable }} {{ .Relation.Tag }} {{end}}
+	{{ .Relation.Name | ToName }}Ref *{{ .Relation.RefTable }} {{ .Relation.Tag }} {{end}}
 {{- end }}
 }
 {{end}}
