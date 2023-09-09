@@ -2,11 +2,6 @@ package logic
 
 import (
 	"fmt"
-	"github.com/gogf/gf/v2/encoding/gjson"
-	"github.com/gogf/gf/v2/os/gfile"
-	"github.com/gogf/gf/v2/text/gstr"
-	"github.com/hinego/gfen/genx"
-	"github.com/hinego/gfen/ssr"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -14,6 +9,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/gogf/gf/v2/os/gfile"
+	"github.com/gogf/gf/v2/text/gstr"
+	"github.com/hinego/gfen/genx"
+	"github.com/hinego/gfen/ssr"
 )
 
 type sLogic struct {
@@ -56,7 +56,6 @@ func (r *sLogic) serviceRegInit(logic *genx.Logic) (err error) {
 	}
 	path := fmt.Sprintf("%s/%s", r.config.LogicPath, logic.Folder)
 	r.imports[path] = path
-	log.Println("data", gjson.MustEncodeString(logic))
 	return ssr.Gen().Execute(&genx.Execute{
 		Code: registerTemplate,
 		File: fmt.Sprintf("%s/%s/%s.init.go", r.config.LogicPath, logic.Folder, logic.Base),
