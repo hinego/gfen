@@ -67,7 +67,7 @@ func (r *sLogic) serviceRegInit(logic *genx.Logic) (err error) {
 			"Name": logic.Name,
 			"Path": r.config.ServicePath,
 		},
-		Must: false,
+		Must: true,
 	})
 }
 func (r *sLogic) serviceLogicInit() (err error) {
