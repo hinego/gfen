@@ -10,6 +10,17 @@ import (
 	"gorm.io/gorm/schema"
 )
 
+func (r *Type) NotNull() *Type {
+	return &Type{
+		Name:       r.Name,
+		Postgres:   r.Postgres,
+		Mysql:      r.Mysql,
+		Sqlite:     r.Sqlite,
+		Type:       r.Type,
+		Native:     r.Native,
+		SetNotNull: true,
+	}
+}
 func (r *Type) Get() (value any) {
 	return r.value
 }
@@ -135,6 +146,9 @@ func (c *Column) Tag() string {
 	}
 	if c.Type.Serializer() {
 		tags = append(tags, "serializer:json;")
+	}
+	if c.Type.SetNotNull {
+		tags = append(tags, "not null")
 	}
 	// Add user-defined tags
 	for k, v := range c.Tags {

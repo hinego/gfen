@@ -6,13 +6,14 @@ type (
 		Condition string // 验证条件
 	}
 	Type struct {
-		Name     string //字段的名称
-		Postgres string //在Postgres中的类型
-		Mysql    string //在Mysql中的类型
-		Sqlite   string //在Sqlite中的类型
-		Type     any    // 此类型在golang中的类型，直接传入该类型即可，例如 decimal.Decimal{} 或者 int64(0) 然后通过反射获取到类型和包名
-		value    any    // 此字段的值，更新时会使用此值
-		Native   bool   // 是否是原生类型 不需要进行json序列化
+		Name       string //字段的名称
+		Postgres   string //在Postgres中的类型
+		Mysql      string //在Mysql中的类型
+		Sqlite     string //在Sqlite中的类型
+		Type       any    // 此类型在golang中的类型，直接传入该类型即可，例如 decimal.Decimal{} 或者 int64(0) 然后通过反射获取到类型和包名
+		value      any    // 此字段的值，更新时会使用此值
+		Native     bool   // 是否是原生类型 不需要进行json序列化
+		SetNotNull bool   // 是否可以为空
 	}
 	Relation struct {
 		Name      string
