@@ -1,15 +1,19 @@
 package genx
 
 import (
+	"fmt"
+	"reflect"
+	"strings"
+
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/hinego/gfen/horm"
-	"reflect"
 )
 
 type (
 	Field struct {
 		Name    string
 		Type    any
+		Desc    string
 		Package string
 	}
 	Code struct {
@@ -121,6 +125,16 @@ func (r *Code) Request(keys map[string]string) []string {
 		}
 		name += getName(v.Type)
 		name = gstr.ReplaceByMap(name, keys)
+		var tag string
+		if v.Name != "" {
+			tag += fmt.Sprintf(`json:"%s" `, strings.ToLower(horm.ToName(v.Name)))
+		}
+		if v.Desc != "" {
+			tag += fmt.Sprintf(`dc:"%s" `, v.Desc)
+		}
+		if tag != "" {
+			name += fmt.Sprintf(" `%s`", tag)
+		}
 		data[name] = true
 	}
 	return toSlice(data)
@@ -134,6 +148,16 @@ func (r *Code) Response(keys map[string]string) []string {
 		}
 		name += getName(v.Type)
 		name = gstr.ReplaceByMap(name, keys)
+		var tag string
+		if v.Name != "" {
+			tag += fmt.Sprintf(`json:"%s" `, strings.ToLower(horm.ToName(v.Name)))
+		}
+		if v.Desc != "" {
+			tag += fmt.Sprintf(`dc:"%s" `, v.Desc)
+		}
+		if tag != "" {
+			name += fmt.Sprintf(" `%s`", tag)
+		}
 		data[name] = true
 	}
 	return toSlice(data)

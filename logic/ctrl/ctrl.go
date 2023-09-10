@@ -2,12 +2,13 @@ package ctrl
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/hinego/gfen/genx"
 	"github.com/hinego/gfen/ssr"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
-	"strings"
 )
 
 type sCtrl struct {
