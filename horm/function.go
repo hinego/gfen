@@ -4,9 +4,10 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"fmt"
-	"gorm.io/gorm/schema"
 	"reflect"
 	"strings"
+
+	"gorm.io/gorm/schema"
 )
 
 func (r *Type) Get() (value any) {
@@ -17,6 +18,9 @@ func (r *Type) Valid() (ok bool) {
 }
 func (r *Type) Serializer() (value bool) {
 	if r.Package() == "" {
+		return false
+	}
+	if r.Native {
 		return false
 	}
 	valType := reflect.TypeOf(r.Type)

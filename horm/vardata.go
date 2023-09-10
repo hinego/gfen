@@ -23,6 +23,10 @@ var (
 				Name: "updated_at",
 				Type: Int64,
 			},
+			{
+				Name: "deleted_at",
+				Type: DeletedAt,
+			},
 		},
 	}
 )

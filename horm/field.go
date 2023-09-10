@@ -1,11 +1,21 @@
 package horm
 
 import (
-	"github.com/hinego/decimal"
 	"time"
+
+	"github.com/hinego/decimal"
+	"gorm.io/plugin/soft_delete"
 )
 
 var (
+	DeletedAt = &Type{
+		Name:     "Uint",
+		Postgres: "bigint",
+		Mysql:    "bigint",
+		Sqlite:   "bigint",
+		Type:     soft_delete.DeletedAt(0),
+		Native:   true,
+	}
 	Int64 = &Type{
 		Name:     "Int64",
 		Postgres: "bigint",
