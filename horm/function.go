@@ -135,6 +135,9 @@ func (c *Column) Tag() string {
 	if c.Increment {
 		tags = append(tags, "autoIncrement")
 	}
+	if c.Default != "" {
+		tags = append(tags, "default:"+c.Default)
+	}
 	if c.Unique {
 		tags = append(tags, "unique")
 	}

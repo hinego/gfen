@@ -59,6 +59,7 @@ type (
 		Relation   *Relation
 		modelType  string
 		Enums      *Enums
+		Default    string
 	}
 	Table struct {
 		Name        string
