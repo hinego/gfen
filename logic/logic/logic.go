@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/hinego/gfen/genx"
@@ -57,17 +58,25 @@ func (r *sLogic) serviceRegInit(logic *genx.Logic) (err error) {
 	if logic.Main && !strings.HasSuffix(logic.Name, "_") {
 		return
 	}
+
+	var data = map[string]any{
+		"Base": logic.Base,
+		"Name": logic.Name,
+		"Path": r.config.ServicePath,
+	}
+	if strings.Contains(strings.ToLower(logic.Base), "cmd") {
+		log.Println(gjson.MustEncodeString(logic))
+		log.Println(logic.Name)
+		log.Println(data)
+	}
 	path := fmt.Sprintf("%s/%s", r.config.LogicPath, logic.Folder)
 	r.imports[path] = path
 	return ssr.Gen().Execute(&genx.Execute{
-		Code: registerTemplate,
-		File: fmt.Sprintf("%s/%s/%s.init.go", r.config.LogicPath, logic.Folder, logic.Base),
-		Data: map[string]any{
-			"Base": logic.Base,
-			"Name": logic.Name,
-			"Path": r.config.ServicePath,
-		},
-		Must: true,
+		Code:  registerTemplate,
+		File:  fmt.Sprintf("%s/%s/%s.init.go", r.config.LogicPath, logic.Folder, logic.Base),
+		Data:  data,
+		Debug: strings.Contains(strings.ToLower(logic.Base), "cmd"),
+		Must:  true,
 	})
 }
 func (r *sLogic) serviceLogicInit() (err error) {

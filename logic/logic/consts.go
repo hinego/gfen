@@ -55,7 +55,7 @@ const registerTemplate = `package {{.Base}}
 import "{{.Module}}/{{.Path}}"
 
 func init() {
-	service.Register("I{{.Name | title}}", &s{{.Base | title}}{})
+	service.Register("I{{.Name}}", &s{{.Base | title}}{})
 }
 `
 const serviceInitTemplate = `package {{.Package}}

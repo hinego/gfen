@@ -41,6 +41,7 @@ func (r *sGen) Execute(in *genx.Execute) (err error) {
 		dataMap = map[string]any{}
 		funcMap = template.FuncMap{
 			"title":    horm.ToName,
+			"title2":   strings.Title,
 			"lower":    strings.ToLower,
 			"basename": gfile.Basename,
 			"ToName":   horm.ToName,
@@ -63,7 +64,6 @@ func (r *sGen) Execute(in *genx.Execute) (err error) {
 		dataMap[k] = v
 	}
 	if err = code.Execute(&buffer, dataMap); err != nil {
-
 		return
 	}
 	if data, err = format.Source(buffer.Bytes()); err != nil {
