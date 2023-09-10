@@ -188,8 +188,12 @@ func (r *sHorm) fill() {
 	for k, v := range r.Table {
 		for _, v1 := range v.Column {
 			if v1.Relation != nil && v1.Relation.Type == horm.BelongsTo {
+
 				var ref = v1.Relation.Reverse()
 				r.setRelation(ref)
+				if v1.Type.Point {
+					v1.Relation.ForeignPoint = true
+				}
 				r.setRelation(v1.Relation)
 			}
 			if v1.Primary {

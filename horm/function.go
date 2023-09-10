@@ -17,8 +17,22 @@ func (r *Type) NotNull() *Type {
 		Mysql:      r.Mysql,
 		Sqlite:     r.Sqlite,
 		Type:       r.Type,
+		value:      nil,
 		Native:     r.Native,
 		SetNotNull: true,
+		Point:      r.Point,
+	}
+}
+func (r *Type) PointAble() *Type {
+	return &Type{
+		Name:       r.Name,
+		Postgres:   r.Postgres,
+		Mysql:      r.Mysql,
+		Sqlite:     r.Sqlite,
+		Type:       r.Type,
+		Native:     r.Native,
+		SetNotNull: r.SetNotNull,
+		Point:      true,
 	}
 }
 func (r *Type) Get() (value any) {
@@ -47,6 +61,9 @@ func (r *Type) String() string {
 	ref := reflect.ValueOf(r.Type)
 	if ref.Kind() == reflect.Ptr {
 		return "*" + ref.Elem().Type().String()
+	}
+	if r.Point {
+		return "*" + ref.Type().String()
 	}
 	return ref.Type().String()
 }

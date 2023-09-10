@@ -14,20 +14,23 @@ type (
 		value      any    // 此字段的值，更新时会使用此值
 		Native     bool   // 是否是原生类型 不需要进行json序列化
 		SetNotNull bool   // 是否可以为空
+		Point      bool   // 是否以指针使用指针
 	}
 	Relation struct {
-		Name      string
-		RefName   string
-		Type      string //belongs_to has_one has_many，一旦创建A->B的关系，B->A的关系也会自动创建
-		RefTable  string //关联的表名
-		Table     string //此表的表名
-		Query     bool   //是否创建Query功能
-		Foreign   string //外键的字段名
-		Reference string //外键引用的字段名 (通常是主键)
-		Unique    bool   //是否唯一
-		Desc      string
-		OnUpdate  string
-		OnDelete  string
+		Name         string
+		RefName      string
+		Type         string //belongs_to has_one has_many，一旦创建A->B的关系，B->A的关系也会自动创建
+		RefTable     string //关联的表名
+		Table        string //此表的表名
+		Fake         bool   // 虚拟外键 不会在数据库中创建外键
+		Query        bool   //是否创建Query功能
+		Foreign      string //外键的字段名
+		ForeignPoint bool   //外键是否为指针
+		Reference    string //外键引用的字段名 (通常是主键)
+		Unique       bool   //是否唯一
+		Desc         string
+		OnUpdate     string
+		OnDelete     string
 	}
 	Enum struct {
 		Name  string

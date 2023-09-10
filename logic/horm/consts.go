@@ -24,8 +24,8 @@ func Migrate(db *gorm.DB) (err error) {
 
 {{range .Table}}
 type {{ .Name }} struct { {{ range .Column }} {{if .Title}}
-	{{ .Title }} {{ .Type }} {{ .Tag }} {{end}} {{if .IsBelongsTo}}
-	{{ .Relation.Name | ToName }}Ref *{{ .Relation.RefTable }} {{ .Relation.Tag }} {{end}}
+	{{ .Title }} {{ .Type }} {{ .Tag }} {{end}} {{if .IsBelongsTo}} {{if not .Relation.Fake}}
+	{{ .Relation.Name | ToName }}Ref *{{ .Relation.RefTable }} {{ .Relation.Tag }} {{end}} {{end}}
 {{- end }}
 }
 {{end}}
@@ -73,8 +73,11 @@ func (r *{{ $.Name | title}}) Delete() (info gen.ResultInfo,err error) {
 	return r.Query().Delete()
 }
 {{ range .Relation }}
-func (r *{{ $.Name | title}}) Query{{ .Name | ToName }}() I{{ .RefTable | title }}Do {
-	return Query{{ .RefTable | title }}().Where({{ .RefTable }}s.{{ .ReferenceName }}.Eq(r.{{ .ForeignName }}))
+func (r *{{ $.Name | title}}) Query{{ .Name | ToName }}() I{{ .RefTable | title }}Do { {{if .ForeignPoint}}
+	if r.{{ .ForeignName }} == nil {
+		return Query{{ .RefTable | title }}().Where({{ .RefTable }}s.{{ .ReferenceName }}.Eq(-9999))
+	}  {{end}}
+	return Query{{ .RefTable | title }}().Where({{ .RefTable }}s.{{ .ReferenceName }}.Eq({{if .ForeignPoint}}*{{end}}r.{{ .ForeignName }}))
 }
 
 func (r *{{ $.Name | title}}) Load{{ .Name | ToName }}(fun ...func(do I{{ .RefTable | title }}Do) I{{ .RefTable | title }}Do) (err error) {
