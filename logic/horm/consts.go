@@ -87,7 +87,7 @@ func (r *{{ $.Name | title}}) Query{{ .Name | ToName }}() I{{ .RefTable | title 
 	if r.{{ .ForeignName }} == nil {
 		return Query{{ .RefTable | title }}().Where({{ .RefTable }}s.{{ .ReferenceName }}.Eq(-9999))
 	}  {{end}}
-	return Query{{ .RefTable | title }}().Where({{ .RefTable }}s.{{ .ReferenceName }}.Eq({{if .ForeignPoint}}*{{end}}r.{{ .ForeignName }}))
+	return Query{{ .RefTable | title }}().Where(  {{if eq .ReferenceName "ID" }}       {{ .RefTable }}s.Cache{{ .ReferenceName }}({{if .ForeignPoint}}*{{end}}r.{{ .ForeignName }})         {{else}}       {{ .RefTable }}s.{{ .ReferenceName }}.Eq({{if .ForeignPoint}}*{{end}}r.{{ .ForeignName }})        {{end}}     )
 }
 
 func (r *{{ $.Name | title}}) Load{{ .Name | ToName }}(fun ...func(do I{{ .RefTable | title }}Do) I{{ .RefTable | title }}Do) (err error) {
