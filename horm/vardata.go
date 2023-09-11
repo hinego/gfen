@@ -5,7 +5,11 @@ var (
 	HasMany   = "has_many"
 	BelongsTo = "belongs_to"
 )
-
+var (
+	CacheHard int = 2 // 程序启动时需要先加载缓存，再进行下一步
+	CacheSoft int = 1 // 程序启动时使用协程加载缓存，不影响下一步
+	CacheOff  int = 0
+)
 var (
 	Model = Mixin{
 		Column: []*Column{

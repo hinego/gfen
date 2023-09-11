@@ -8,6 +8,7 @@ import (
 var ( {{range .Table}}
 	{{ .Name | title}} = {{$.Dao}}.Query{{ .Name | title }} {{end}}
 )
+
 `
 const MigrateTemplate = `package migrate
 
@@ -51,6 +52,15 @@ type {{ .Name | title}} struct { {{ range .Column }} {{if .Title}}
 	query *Query
 }
 
+func (r *{{ $.Name | title}}) getCacheKeys() []string {
+	var keys = make([]string, 0) {{range  $k, $v := .CacheKey}}
+	keys = append(keys,gen.CacheKey({{range $k1, $v1 :=  $v.Column}} {{if $k1}},{{end}} {{if $v1.Title}}r.{{ $v1.Title }}{{end}}{{end}})) {{end}}
+	return keys
+}
+
+func (r *{{ $.Name | title}}) deleted() bool {
+	return r.DeletedAt != 0
+}
 
 func (r *{{ $.Name | title}}) Tx(tx *Query) *{{ $.Name | title}} {
 	return &{{ $.Name | title}}{ {{ range .Column }} {{if .Title}}
@@ -114,8 +124,11 @@ func (r *{{ $.Name | title}}) Get{{ .Name | ToName }}X(update ...bool) ({{if .Ar
 `
 const FieldTemplate = `package {{.Table}}s
 
-import "gorm.io/gen/field"
-
+import (
+	"errors"
+	"gorm.io/gen"
+	"gorm.io/gen/field"
+)
 
 var ( {{range .Column}}
  {{.Title}} = field.New{{.Type.Name}}("{{$.TableName}}", "{{.Name}}") {{end}}
@@ -126,6 +139,34 @@ const ( {{range $k, $v := $v1.Enums.Enums}}
 	{{$v1.Title}}{{$v.Name | ToName}} {{$v1.Enums.Type}} = {{$v.String}}	{{end}}
 )
 {{end}}{{end}}
+
+type ( {{range  $k, $v := .CacheKey}}
+		cacheWhere{{$v.Name | title}} struct { {{range $v.Column}} {{if .Title}}
+			{{ .Title }} {{ .Type }} {{ .Tag }} {{end}} {{end}}
+		} {{end}}
+)
+
+{{range  $k, $v := .CacheKey}}
+
+func Cache{{$v.Name | title}} ({{range $k1, $v1 :=  $v.Column}} {{if $k1}},{{end}} {{if $v1.Title}}{{ $v1.Title | lower }} {{ .Type }}{{end}}{{end}}) gen.Condition {
+	return &cacheWhere{{$v.Name | title}}{
+		{{range $k1, $v1 :=  $v.Column}} {{if $v1.Title}}{{ $v1.Title }}:{{ $v1.Title  | lower  }},{{end}}{{end}}
+	}
+}
+
+func (c *cacheWhere{{$v.Name | title}})  BeCond() any {
+	return &gen.CacheWhere{
+		Code: gen.CacheKey({{range $k1, $v1 :=  $v.Column}} {{if $k1}},{{end}} {{if $v1.Title}}c.{{ $v1.Title }}{{end}}{{end}}),
+		Where: []gen.Condition{ {{range $v.Column}} {{if .Title}}
+		{{ .Title }}.Eq(c.{{ .Title }}), {{end}} {{end}}
+		},
+	}
+}
+func (c *cacheWhere{{$v.Name | title}})  CondError() error {
+	return errors.New("cache key")
+}
+{{end}}
+
 `
 const DaoTemplate = `package {{.Package}}
 
@@ -197,6 +238,7 @@ type I{{.Model}}Do interface {
 	Take() (*{{.Model}}, error)
 	Last() (*{{.Model}}, error)
 	Find() ([]*{{.Model}}, error)
+	DoCache(date int64,store func(data cacheKey)) (err error)
 	FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*{{.Model}}, err error)
 	FindInBatches(result *[]*{{.Model}}, batchSize int, fc func(tx gen.Dao, batch int) error) error
 	Pluck(column field.Expr, dest interface{}) error
@@ -236,9 +278,10 @@ type {{.Table}}Do struct{
 	preload {{.Table}}Preload
 	table string
 	fieldMap map[string]any
+	cacheWhere *gen.CacheWhere
 }
 func (a {{.Table}}Do) Query(face queryFace) (err error) {
-	data := &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao: a.Dao}
+	data := &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao: a.Dao}
 	face.SetFun(a.GetFieldByName)
 	var result any
 	var total int64
@@ -251,7 +294,7 @@ func (a {{.Table}}Do) Query(face queryFace) (err error) {
 }
 
 func (a {{.Table}}Do) WhereRaw(data any, args ...any) I{{$.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao: a.Dao.WhereRaw(data,args...)}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao: a.Dao.WhereRaw(data,args...)}
 }
 func (a {{.Table}}Do) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 	_f, ok := a.fieldMap[fieldName]
@@ -274,7 +317,7 @@ func (a {{.Table}}Do) GetField(fieldName string) (any, bool) {
 func (a {{$.Table}}Do) With{{.Name | title}}(fun ...func(do I{{ .RefTable | title }}Do) I{{ .RefTable | title }}Do) I{{$.Model}}Do {
 	a.preload.{{.Name | title}} = true
 	a.preload.{{.Name | title}}Expr = append(a.preload.{{.Name | title}}Expr, fun...)
-	return &{{$.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Debug()}
+	return &{{$.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Debug()}
 }
 {{end}}
 
@@ -291,11 +334,11 @@ func (a {{.Table}}Do) doPreload(data ...*{{.Table | title}}) (err error) {
 }
 
 func (a {{.Table}}Do) Debug() I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Debug()}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Debug()}
 }
 
 func (a {{.Table}}Do) WithContext(ctx context.Context) I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.WithContext(ctx)}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.WithContext(ctx)}
 }
 
 func (a {{.Table}}Do) ReadDB() I{{.Model}}Do {
@@ -307,35 +350,63 @@ func (a {{.Table}}Do) WriteDB() I{{.Model}}Do {
 }
 
 func (a {{.Table}}Do) Session(config *gorm.Session) I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Session(config)}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Session(config)}
 }
 
 func (a {{.Table}}Do) Clauses(conds ...clause.Expression) I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Clauses(conds...)}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Clauses(conds...)}
 }
 
 func (a {{.Table}}Do) Returning(value interface{}, columns ...string) I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Returning(value, columns...)}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Returning(value, columns...)}
 }
 
 func (a {{.Table}}Do) Not(conds ...gen.Condition) I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Not(conds...)}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Not(conds...)}
 }
 
 func (a {{.Table}}Do) Or(conds ...gen.Condition) I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Or(conds...)}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Or(conds...)}
 }
 
 func (a {{.Table}}Do) Select(conds ...field.Expr) I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Select(conds...)}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Select(conds...)}
 }
 
 func (a {{.Table}}Do) Where(conds ...gen.Condition) I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Where(conds...)}
+	var conditions = make([]gen.Condition, 0)
+	var cacheWhere *gen.CacheWhere
+	var num int
+	for _, v := range conds {
+		var err error
+		if err = v.CondError();err != nil {
+			var data any
+			if data = v.BeCond(); data != nil {
+				var dataWhere *gen.CacheWhere
+				var ok bool
+				if dataWhere, ok = data.(*gen.CacheWhere); ok {
+					cacheWhere = dataWhere
+					conditions = append(conditions, dataWhere.Where...)
+				}
+			}
+		}else {
+			num += 1
+			conditions = append(conditions, v)
+		}
+	}
+	if cacheWhere != nil && num == 0 {
+		a.cacheWhere = cacheWhere
+	}else {
+		a.cacheWhere = nil
+	}
+	if len(conditions) == 0 {
+		return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao}
+	}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Where(conditions...)}
 }
 
 func (a {{.Table}}Do) ID({{.Primary}} {{.PrimaryType}}) I{{.Model}}Do {
-	return a.Where({{.Table}}s.{{.Primary}}.Eq({{.Primary}}))
+	return a.Where({{.Table}}s.Cache{{.Primary}}({{.Primary}}))
 }
 func (a {{.Table}}Do) Get({{.Primary}} {{.PrimaryType}}) (*{{.Model}}, error) {
 	return a.ID({{.Primary}}).First()
@@ -356,51 +427,51 @@ func (a {{.Table}}Do) Exists(subquery interface{ UnderlyingDB() *gorm.DB }) I{{.
 }
 
 func (a {{.Table}}Do) Order(conds ...field.Expr) I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Order(conds...)}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Order(conds...)}
 }
 
 func (a {{.Table}}Do) Distinct(cols ...field.Expr) I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Distinct(cols...)}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Distinct(cols...)}
 }
 
 func (a {{.Table}}Do) Omit(cols ...field.Expr) I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Omit(cols...)}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Omit(cols...)}
 }
 
 func (a {{.Table}}Do) Join(table schema.Tabler, on ...field.Expr) I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Join(table, on...)}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Join(table, on...)}
 }
 
 func (a {{.Table}}Do) LeftJoin(table schema.Tabler, on ...field.Expr) I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.LeftJoin(table, on...)}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.LeftJoin(table, on...)}
 }
 
 func (a {{.Table}}Do) RightJoin(table schema.Tabler, on ...field.Expr) I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.RightJoin(table, on...)}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.RightJoin(table, on...)}
 }
 
 func (a {{.Table}}Do) Group(cols ...field.Expr) I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Group(cols...)}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Group(cols...)}
 }
 
 func (a {{.Table}}Do) Having(conds ...gen.Condition) I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Having(conds...)}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Having(conds...)}
 }
 
 func (a {{.Table}}Do) Limit(limit int) I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Limit(limit)}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Limit(limit)}
 }
 
 func (a {{.Table}}Do) Offset(offset int) I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Offset(offset)}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Offset(offset)}
 }
 
 func (a {{.Table}}Do) Scopes(funcs ...func(gen.Dao) gen.Dao) I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Scopes(funcs...)}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Scopes(funcs...)}
 }
 
 func (a {{.Table}}Do) Unscoped() I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Unscoped()}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Unscoped()}
 }
 
 func (a {{.Table}}Do) Create(values ...*{{.Model}}) error {
@@ -433,8 +504,25 @@ func (a {{.Table}}Do) Save(values ...*{{.Model}}) error {
 	}
 	return a.Dao.Save(values)
 }
-
+func (a {{.Table}}Do) getByCache() (result *{{.Model}}, vaild bool) {
+	if a.cacheWhere == nil || !{{.Table | lower}}Cacher.UseCache() {
+		return nil, false
+	}
+	var v any
+	var ok bool
+	if v,ok = {{.Table | lower}}Cacher.Get(a.cacheWhere.Code); !ok {
+		return nil, true
+	}
+	if result, ok = v.(*{{.Model}}); !ok {
+		return nil, true
+	}
+	return result, true
+}
 func (a {{.Table}}Do) First() (*{{.Model}}, error) {
+	if result, ok := a.getByCache(); ok {
+		return result, nil
+	}
+
 	if result, err := a.Dao.First(); err != nil {
 		return nil, err
 	} else {
@@ -447,6 +535,11 @@ func (a {{.Table}}Do) First() (*{{.Model}}, error) {
 }
 
 func (a {{.Table}}Do) Take() (*{{.Model}}, error) {
+
+	if result, ok := a.getByCache(); ok {
+		return result, nil
+	}
+
 	if result, err := a.Dao.Take(); err != nil {
 		return nil, err
 	} else {
@@ -459,6 +552,11 @@ func (a {{.Table}}Do) Take() (*{{.Model}}, error) {
 }
 
 func (a {{.Table}}Do) Last() (*{{.Model}}, error) {
+
+	if result, ok := a.getByCache(); ok {
+		return result, nil
+	}
+
 	if result, err := a.Dao.Last(); err != nil {
 		return nil, err
 	} else {
@@ -482,6 +580,19 @@ func (a {{.Table}}Do) Find() ([]*{{.Model}}, error) {
 	}
 }
 
+func (a {{.Table}}Do) DoCache(date int64,store func(data cacheKey)) (err error) {
+	var results = make([]*{{.Model}}, 0)
+	if err = a.Where({{.Table}}s.UpdatedAt.Gt(date)).FindInBatches(&results, 500, func(tx gen.Dao, batch int) (err error) {
+		for _, v := range results {
+			store(v)
+		}
+		return
+	}); err != nil {
+		return
+	}
+	return nil
+}
+
 func (a {{.Table}}Do) FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*{{.Model}}, err error) {
 	buf := make([]*{{.Model}}, 0, batchSize)
 	err = a.Dao.FindInBatches(&buf, batchSize, func(tx gen.Dao, batch int) error {
@@ -496,11 +607,11 @@ func (a {{.Table}}Do) FindInBatches(result *[]*{{.Model}}, batchSize int, fc fun
 }
 
 func (a {{.Table}}Do) Attrs(attrs ...field.AssignExpr) I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Attrs(attrs...)}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Attrs(attrs...)}
 }
 
 func (a {{.Table}}Do) Assign(attrs ...field.AssignExpr) I{{.Model}}Do {
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Assign(attrs...)}
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Assign(attrs...)}
 }
 
 func (a {{.Table}}Do) Joins(fields ...field.RelationField) I{{.Model}}Do {
@@ -508,7 +619,7 @@ func (a {{.Table}}Do) Joins(fields ...field.RelationField) I{{.Model}}Do {
 	for _, _f := range fields {
 		data.Joins(_f)
 	}
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:data}	
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:data}	
 }
 
 func (a {{.Table}}Do) Preload(fields ...field.RelationField) I{{.Model}}Do {
@@ -516,7 +627,7 @@ func (a {{.Table}}Do) Preload(fields ...field.RelationField) I{{.Model}}Do {
 	for _, _f := range fields {
 		data.Preload(_f)
 	}
-	return &{{.Table}}Do{table: a.table, fieldMap: a.fieldMap, preload: a.preload, Dao:data}		
+	return &{{.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:data}		
 }
 
 func (a {{.Table}}Do) FirstOrInit() (*{{.Model}}, error) {
@@ -572,6 +683,11 @@ func (a {{.Table}}Do) Delete(models ...*{{.Model}}) (result gen.ResultInfo, err 
 const GenTemplate = `package {{.Package}}
 
 import (
+	"time"
+	"log"
+	"strings"
+	"errors"
+	"sync"
 	"context"
 	"database/sql"
 	"gorm.io/gen"
@@ -585,6 +701,11 @@ var (
 	_db          *gorm.DB
 ) 
 
+type CacheWhere interface {
+	GetCondition() []gen.Condition
+	GetCacheKey() string
+}
+
 type queryFace interface {
 	GetOffset() int
 	GetSize() int
@@ -595,6 +716,191 @@ type queryFace interface {
 	SetTotal(total int64)
 }
 
+
+
+type cacheKey interface {
+	getCacheKeys() []string
+	deleted() bool
+}
+type cacheValue struct {
+	Valid bool
+	Value any
+}
+type cacheDriver struct {
+	level              int
+	err                error
+	cache              sync.Map
+	lastExecuteTime    int64
+	nominalExecuteTime int64
+	fun                func(date int64, store func(data cacheKey)) (err error)
+	lock               sync.Mutex
+}
+
+func (r *cacheDriver) Init() (err error) {
+	switch r.level {
+	case 1:
+		go r.Reload()
+	case 2:
+		return r.Reload()
+	}
+	return nil
+}
+func (r *cacheDriver) UseCache() bool {
+	if r.level == 0 {
+		return false
+	}
+	return r.err == nil
+}
+func (r *cacheDriver) get(key string) (value *cacheValue, ok bool) {
+	var v any
+	if v, ok = r.cache.Load(key); ok {
+		value = v.(*cacheValue)
+	}
+	return
+}
+func (r *cacheDriver) Get(key string) (value any, ok bool) {
+	var v *cacheValue
+	if v, ok = r.get(key); ok {
+		if v.Valid {
+			return v.Value, true
+		} else {
+			r.cache.Delete(key)
+			return nil, false
+		}
+	}
+	return
+}
+func (r *cacheDriver) Put(data cacheKey) {
+	for _, v := range data.getCacheKeys() {
+		r.store(v, data)
+	}
+}
+func (r *cacheDriver) store(key string, value cacheKey) {
+	var (
+		v  *cacheValue
+		ok bool
+	)
+	if v, ok = r.get(key); ok {
+		v.Valid = false
+		r.cache.Delete(key)
+	}
+	if value.deleted() { // 如果数据已经被删除了 那么就不要缓存了
+		return
+	}
+	r.cache.Store(key, &cacheValue{
+		Valid: true,
+		Value: value,
+	})
+}
+func (r *cacheDriver) reload() (check bool, err error) {
+	if r.fun == nil {
+		return
+	}
+	if !r.lock.TryLock() {
+		r.nominalExecuteTime = time.Now().Unix()
+		return
+	}
+	defer r.lock.Unlock()
+	var now = time.Now().Unix()
+	var date = now
+	if r.lastExecuteTime == 0 {
+		date = 0
+	}
+	if err = r.fun(date, r.Put); err != nil {
+		r.err = err // 如果出错 那么则暂时不使用缓存了
+		return
+	}
+	if r.err != nil {
+		r.err = nil
+	}
+	r.lastExecuteTime = now
+	return true, nil
+}
+func (r *cacheDriver) Reload() (err error) {
+	for {
+		var check bool
+		if check, err = r.reload(); err != nil {
+			time.Sleep(time.Second * 5)
+			continue
+		}
+		if check && r.nominalExecuteTime > r.lastExecuteTime {
+			return r.Reload()
+		}
+		break
+	}
+	return
+}
+
+
+var ( {{range .Table}} 
+	{{ .Name | lower }}Cacher = &cacheDriver{
+		err: errors.New("wait load"),
+		level: {{.CacheLevel}},
+
+	} {{end}}
+)
+
+
+
+
+func CallbackPlugin() gorm.Plugin {
+	return &sCallback{}
+}
+
+type sCallback struct{}
+
+func (r *sCallback) Name() string {
+	return ""
+}
+func (r *sCallback) Initialize(db *gorm.DB) (err error) {
+	err = db.Callback().Create().After("gorm:create").Register("gorm:cache:after_create", r.after)
+	if err != nil {
+		return err
+	}
+
+	err = db.Callback().Delete().After("gorm:delete").Register("gorm:cache:after_delete", r.after)
+	if err != nil {
+		return err
+	}
+
+	err = db.Callback().Update().After("gorm:update").Register("gorm:cache:after_update", r.after)
+	if err != nil {
+		return err
+	}
+	return
+}
+func (r *sCallback) after(db *gorm.DB) {
+	if db.RowsAffected == 0 {
+		return // no rows affected, no need to invalidate cache
+	}
+	var tableName string
+	if db.Statement.Schema != nil {
+		tableName = strings.ToLower(db.Statement.Schema.Table)
+	} else {
+		tableName = strings.ToLower(db.Statement.Table)
+	}
+	var fun func() (err error)
+	switch tableName { {{range .Table}} {{if .CacheLevel}}
+	case "{{.TableName}}":
+		fun = {{ .Name | lower }}Cacher.Reload {{end}} {{end}}
+	default:
+		fun = func() (err error) {
+			return
+		}
+	}
+	if err := fun(); err != nil {
+		log.Println("刷新缓存失败", err)
+	}
+}
+
+
+
+
+
+
+
+
+
 {{range .Table}}
 func Query{{ .Name | title}}() I{{ .Name | title}}Do {
 	return new{{ .Name | title}}(_db)
@@ -602,6 +908,19 @@ func Query{{ .Name | title}}() I{{ .Name | title}}Do {
 {{end}}
 func RegisterDB(db *gorm.DB) {
 	_db = db.Session(&gorm.Session{NewDB: true})
+	initCache()
+}
+func initCache() { {{range .Table}} {{if .CacheLevel}}
+	{{ .Name | lower }}Cacher.fun = Query{{ .Name | title}}().DoCache {{end}} {{end}}
+
+	var cacheFunc = []func() error{ {{range .Table}} {{if .CacheLevel}}
+	{{ .Name | lower }}Cacher.Init,{{end}} {{end}}
+	}
+	for _, v := range cacheFunc {
+		if err := v(); err != nil {
+			panic(err)
+		}
+	}
 }
 func DB() *gorm.DB {
 	return _db.Session(&gorm.Session{NewDB: true})

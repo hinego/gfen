@@ -54,6 +54,7 @@ type (
 		Unique     bool              //此字段是否唯一
 		Checks     []*Check          //验证条件
 		Uniques    []string          //联合唯一索引 例如：[]string{"type_index"}
+		Caches     []string          //缓存字段 例如：[]string{"name"}
 		Primary    bool              //是否主键
 		Increment  bool              //是否自增
 		Step       int               //自增步长
@@ -70,6 +71,7 @@ type (
 		PrimaryType string //主键的类型
 		Column      []*Column
 		Mixin       []*Mixin
+		CacheLevel  int
 		Relation    map[string]*Relation
 	}
 	Mixin struct {

@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 
 	"gorm.io/gorm/schema"
@@ -213,6 +214,40 @@ var namer = schema.NamingStrategy{}
 
 func (r *Table) TableName() string {
 	return namer.TableName(r.Name)
+}
+func (r *Table) CacheKey() []*Table {
+	var data = make(map[string]*Table, 0)
+	var ret = make([]*Table, 0)
+	for _, v := range r.Column {
+		if v.Primary {
+			data[v.Name] = &Table{
+				Name: ToName(v.Name),
+				Column: []*Column{
+					v,
+				},
+			}
+		}
+		for _, v1 := range v.Caches {
+			key := ToName(v1)
+			if _, ok := data[key]; !ok {
+				data[key] = &Table{
+					Name: ToName(v1),
+					Column: []*Column{
+						v,
+					},
+				}
+			} else {
+				data[key].Column = append(data[key].Column, v)
+			}
+		}
+	}
+	for _, v := range data {
+		ret = append(ret, v)
+	}
+	sort.Slice(ret, func(i, j int) bool {
+		return ret[i].Name < ret[j].Name
+	})
+	return ret
 }
 func (r *Enums) Type() string {
 	ref := reflect.ValueOf(r.Default)
