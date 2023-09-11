@@ -114,7 +114,7 @@ func (r *sCtrl) controllerInitImport(apis []*genx.API) (err error) {
 		Data: map[string]any{
 			"APIs": apis,
 		},
-		File: r.init + "/init_controller.go",
+		File: r.init + "/ctrl.gen.go",
 		Must: true,
 	}
 	return ssr.Gen().Execute(input)

@@ -82,7 +82,7 @@ func (r *sLogic) serviceRegInit(logic *genx.Logic) (err error) {
 func (r *sLogic) serviceLogicInit() (err error) {
 	return ssr.Gen().Execute(&genx.Execute{
 		Code: importControllerTemplate,
-		File: fmt.Sprintf("internal/packed/logic.go"),
+		File: fmt.Sprintf("internal/packed/logic.gen.go"),
 		Data: map[string]any{
 			"Imports": r.imports,
 		},
@@ -92,7 +92,7 @@ func (r *sLogic) serviceLogicInit() (err error) {
 func (r *sLogic) serviceInterface(data *genx.LogicData) (err error) {
 	return ssr.Gen().Execute(&genx.Execute{
 		Code: serviceTemplate,
-		File: fmt.Sprintf("%s/%s.go", r.config.ServicePath, data.Name),
+		File: fmt.Sprintf("%s/%s.gen.go", r.config.ServicePath, data.Name),
 		Must: true,
 		Data: map[string]any{
 			"Data":    data.Data,
@@ -124,7 +124,7 @@ func (r *sLogic) paddingData(data *genx.LogicData) {
 func (r *sLogic) serviceInit(in *genx.LogicInput) (err error) {
 	return ssr.Gen().Execute(&genx.Execute{
 		Code: serviceInitTemplate,
-		File: in.ServicePath + "/face.init.go",
+		File: in.ServicePath + "/face.init.gen.go",
 		Must: false,
 		Data: map[string]any{
 			"Package": gfile.Basename(r.config.ServicePath),
