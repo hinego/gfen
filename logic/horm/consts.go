@@ -317,7 +317,7 @@ func (a {{.Table}}Do) GetField(fieldName string) (any, bool) {
 func (a {{$.Table}}Do) With{{.Name | title}}(fun ...func(do I{{ .RefTable | title }}Do) I{{ .RefTable | title }}Do) I{{$.Model}}Do {
 	a.preload.{{.Name | title}} = true
 	a.preload.{{.Name | title}}Expr = append(a.preload.{{.Name | title}}Expr, fun...)
-	return &{{$.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao.Debug()}
+	return &{{$.Table}}Do{table: a.table,cacheWhere:a.cacheWhere, fieldMap: a.fieldMap, preload: a.preload, Dao:a.Dao}
 }
 {{end}}
 
@@ -582,7 +582,7 @@ func (a {{.Table}}Do) Find() ([]*{{.Model}}, error) {
 
 func (a {{.Table}}Do) DoCache(date int64,store func(data cacheKey)) (err error) {
 	var results = make([]*{{.Model}}, 0)
-	if err = a.Where({{.Table}}s.UpdatedAt.Gt(date)).FindInBatches(&results, 500, func(tx gen.Dao, batch int) (err error) {
+	if err = a.Unscoped().Where({{.Table}}s.UpdatedAt.Gte(date)).FindInBatches(&results, 500, func(tx gen.Dao, batch int) (err error) {
 		for _, v := range results {
 			store(v)
 		}
@@ -739,9 +739,9 @@ type cacheDriver struct {
 func (r *cacheDriver) Init() (err error) {
 	switch r.level {
 	case 1:
-		go r.Reload()
+		go r.Reload(0)
 	case 2:
-		return r.Reload()
+		return r.Reload(0)
 	}
 	return nil
 }
@@ -792,7 +792,7 @@ func (r *cacheDriver) store(key string, value cacheKey) {
 		Value: value,
 	})
 }
-func (r *cacheDriver) reload() (check bool, err error) {
+func (r *cacheDriver) reload(date int64) (check bool, err error) {
 	if r.fun == nil {
 		return
 	}
@@ -802,7 +802,7 @@ func (r *cacheDriver) reload() (check bool, err error) {
 	}
 	defer r.lock.Unlock()
 	var now = time.Now().Unix()
-	var date = now
+	// var date = now
 	if r.lastExecuteTime == 0 {
 		date = 0
 	}
@@ -816,15 +816,15 @@ func (r *cacheDriver) reload() (check bool, err error) {
 	r.lastExecuteTime = now
 	return true, nil
 }
-func (r *cacheDriver) Reload() (err error) {
+func (r *cacheDriver) Reload(date int64) (err error) {
 	for {
 		var check bool
-		if check, err = r.reload(); err != nil {
+		if check, err = r.reload(date); err != nil {
 			time.Sleep(time.Second * 5)
 			continue
 		}
 		if check && r.nominalExecuteTime > r.lastExecuteTime {
-			return r.Reload()
+			return r.Reload(r.nominalExecuteTime)
 		}
 		break
 	}
@@ -853,6 +853,22 @@ func (r *sCallback) Name() string {
 	return ""
 }
 func (r *sCallback) Initialize(db *gorm.DB) (err error) {
+
+	err = db.Callback().Create().After("gorm:create").Register("gorm:cache:before_create", r.before)
+	if err != nil {
+		return err
+	}
+
+	err = db.Callback().Delete().After("gorm:delete").Register("gorm:cache:before_delete", r.before)
+	if err != nil {
+		return err
+	}
+
+	err = db.Callback().Update().After("gorm:update").Register("gorm:cache:before_update", r.before)
+	if err != nil {
+		return err
+	}
+
 	err = db.Callback().Create().After("gorm:create").Register("gorm:cache:after_create", r.after)
 	if err != nil {
 		return err
@@ -867,28 +883,44 @@ func (r *sCallback) Initialize(db *gorm.DB) (err error) {
 	if err != nil {
 		return err
 	}
+
 	return
 }
+
+func (r *sCallback) before(db *gorm.DB) {
+	updatedAt := time.Now().Unix() // 假设你使用的是Unix时间戳
+	db.InstanceSet("UpdatedAt", updatedAt)
+}
+
 func (r *sCallback) after(db *gorm.DB) {
 	if db.RowsAffected == 0 {
 		return // no rows affected, no need to invalidate cache
 	}
+
 	var tableName string
 	if db.Statement.Schema != nil {
 		tableName = strings.ToLower(db.Statement.Schema.Table)
 	} else {
 		tableName = strings.ToLower(db.Statement.Table)
 	}
-	var fun func() (err error)
+
+	var updatedAt int64 = time.Now().Unix()
+	if date, ok := db.InstanceGet("UpdatedAt"); ok {
+		if _, ok := date.(int64); ok {
+			updatedAt = date.(int64)
+		}
+	}
+
+	var fun func(date int64) (err error)
 	switch tableName { {{range .Table}} {{if .CacheLevel}}
 	case "{{.TableName}}":
 		fun = {{ .Name | lower }}Cacher.Reload {{end}} {{end}}
 	default:
-		fun = func() (err error) {
+		fun = func(date int64) (err error) {
 			return
 		}
 	}
-	if err := fun(); err != nil {
+	if err := fun(updatedAt); err != nil {
 		log.Println("刷新缓存失败", err)
 	}
 }
