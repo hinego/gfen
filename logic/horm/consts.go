@@ -57,7 +57,9 @@ func (r *{{ $.Name | title}}) getCacheKeys() []string {
 	keys = append(keys,gen.CacheKey({{range $k1, $v1 :=  $v.Column}} {{if $k1}},{{end}} {{if $v1.Title}}r.{{ $v1.Title }}{{end}}{{end}})) {{end}}
 	return keys
 }
-
+func (r *{{ $.Name | title}}) getPrimaryKey() int64 {
+	return r.ID
+}
 func (r *{{ $.Name | title}}) deleted() bool {
 	return r.DeletedAt != 0
 }
@@ -238,6 +240,7 @@ type I{{.Model}}Do interface {
 	Take() (*{{.Model}}, error)
 	Last() (*{{.Model}}, error)
 	Find() ([]*{{.Model}}, error)
+	All() (results []*{{.Model}},err error)
 	DoCache(date int64,store func(data cacheKey)) (err error)
 	FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*{{.Model}}, err error)
 	FindInBatches(result *[]*{{.Model}}, batchSize int, fc func(tx gen.Dao, batch int) error) error
@@ -504,6 +507,20 @@ func (a {{.Table}}Do) Save(values ...*{{.Model}}) error {
 	}
 	return a.Dao.Save(values)
 }
+
+func (a {{.Table}}Do) All() (results []*{{.Model}},err error) {
+	if !{{.Table | lower}}Cacher.UseCache() {
+		return a.Find()
+	}
+	var data = make([]cacheKey, 0)
+	data = {{.Table | lower}}Cacher.Find()
+	for _, v := range data {
+		if result, ok := v.(*{{.Model}}); ok {
+			results = append(results, result)
+		}
+	}
+	return
+}
 func (a {{.Table}}Do) getByCache() (result *{{.Model}}, vaild bool) {
 	if a.cacheWhere == nil || !{{.Table | lower}}Cacher.UseCache() {
 		return nil, false
@@ -685,6 +702,7 @@ const GenTemplate = `package {{.Package}}
 import (
 	"time"
 	"log"
+	"sort"
 	"strings"
 	"errors"
 	"sync"
@@ -720,11 +738,12 @@ type queryFace interface {
 
 type cacheKey interface {
 	getCacheKeys() []string
+	getPrimaryKey() int64
 	deleted() bool
 }
 type cacheValue struct {
 	Valid bool
-	Value any
+	Value cacheKey
 }
 type cacheDriver struct {
 	level              int
@@ -734,6 +753,23 @@ type cacheDriver struct {
 	nominalExecuteTime int64
 	fun                func(date int64, store func(data cacheKey)) (err error)
 	lock               sync.Mutex
+}
+
+func (r *cacheDriver) Find() (data []cacheKey) {
+	var seen = make(map[int64]bool)
+	r.cache.Range(func(key, value any) bool {
+		var v = value.(*cacheValue)
+		if v.Valid {
+			if _, ok := seen[v.Value.getPrimaryKey()]; !ok {
+				data = append(data, v.Value)
+			}
+		}
+		return true
+	})
+	sort.Slice(data, func(i, j int) bool {
+		return data[i].getPrimaryKey() < data[j].getPrimaryKey()
+	})
+	return
 }
 
 func (r *cacheDriver) Init() (err error) {
