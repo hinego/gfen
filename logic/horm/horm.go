@@ -113,7 +113,6 @@ func (r *sHorm) setRelation(data *horm.Relation) {
 		r.relation[data.Table] = map[string]*horm.Relation{}
 	}
 	r.relation[data.Table][data.Name] = data
-	return
 }
 func (r *sHorm) dao() (err error) {
 	for _, v := range r.Table {
@@ -156,6 +155,7 @@ func (r *sHorm) field() (err error) {
 			},
 			File: fmt.Sprintf("%s/field/%ss/%v.gen.go", r.Path, v.Name, v.Name),
 			Must: true,
+			// Debug: true,
 		}); err != nil {
 			return err
 		}
@@ -179,11 +179,11 @@ func (r *sHorm) fill() {
 			r.Table[k].Mixin = append(r.Table[k].Mixin, &horm.Model)
 		}
 	}
-	for k, _ := range r.Table {
+	for k := range r.Table {
 		if len(r.Table[k].Mixin) == 0 {
 			continue
 		}
-		for k1, _ := range r.Table[k].Mixin {
+		for k1 := range r.Table[k].Mixin {
 			r.Table[k].Column = append(r.Table[k].Mixin[k1].Column, r.Table[k].Column...)
 		}
 	}
@@ -209,7 +209,6 @@ func (r *sHorm) fill() {
 			r.Table[k].Relation = data
 		}
 	}
-	return
 }
 func (r *sHorm) data() (data map[string]any) {
 	return map[string]any{

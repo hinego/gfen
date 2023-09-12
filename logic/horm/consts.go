@@ -150,9 +150,10 @@ type ( {{range  $k, $v := .CacheKey}}
 
 {{range  $k, $v := .CacheKey}}
 
-func Cache{{$v.Name | title}} ({{range $k1, $v1 :=  $v.Column}} {{if $k1}},{{end}} {{if $v1.Title}}{{ $v1.Title | lower }} {{ .Type }}{{end}}{{end}}) gen.Condition {
+func Cache{{$v.Name | title}} ({{range $k1, $v1 :=  $v.Column}} {{if not $v1.Default}} {{if $k1}},{{end}} {{if $v1.Title}}{{ $v1.Title | title }} {{ .Type }}{{end}}{{end}} {{end}} ) gen.Condition {
 	return &cacheWhere{{$v.Name | title}}{
-		{{range $k1, $v1 :=  $v.Column}} {{if $v1.Title}}{{ $v1.Title }}:{{ $v1.Title  | lower  }},{{end}}{{end}}
+		{{range $k1, $v1 :=  $v.Column}} {{if $v1.Title}}{{ $v1.Title }}: {{if .Default}}   {{$v1.Title}}{{$v1.Default | ToName}}  {{else}}    {{ $v1.Title  | title  }}  {{end}}        ,{{end}}
+		{{end}}
 	}
 }
 
@@ -160,7 +161,7 @@ func (c *cacheWhere{{$v.Name | title}})  BeCond() any {
 	return &gen.CacheWhere{
 		Code: gen.CacheKey({{range $k1, $v1 :=  $v.Column}} {{if $k1}},{{end}} {{if $v1.Title}}c.{{ $v1.Title }}{{end}}{{end}}),
 		Where: []gen.Condition{ {{range $v.Column}} {{if .Title}}
-		{{ .Title }}.Eq(c.{{ .Title }}), {{end}} {{end}}
+		{{ .Title }}.Eq({{if .Type.Point}}*{{end}}c.{{ .Title }}), {{end}} {{end}}
 		},
 	}
 }
@@ -175,7 +176,7 @@ const DaoTemplate = `package {{.Package}}
 import (
 	"context" {{ range .Imports }}
 	"{{ . }}" {{ end }}
-	"github.com/gogf/gf/util/gconv"
+	"github.com/gogf/gf/v2/util/gconv"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"
@@ -236,10 +237,11 @@ type I{{.Model}}Do interface {
 	CreateAny(values ...any) error
 	CreateInBatches(values []*{{.Model}}, batchSize int) error
 	Save(values ...*{{.Model}}) error
-	First() (*{{.Model}}, error)
-	Take() (*{{.Model}}, error)
-	Last() (*{{.Model}}, error)
-	Find() ([]*{{.Model}}, error)
+	First(conds ...gen.Condition) (*{{.Model}}, error)
+	Take(conds ...gen.Condition) (*{{.Model}}, error)
+	Last(conds ...gen.Condition) (*{{.Model}}, error)
+	GetByCache() (result *{{.Model}}, vaild bool)
+	Find(conds ...gen.Condition) ([]*{{.Model}}, error)
 	All() (results []*{{.Model}},err error)
 	DoCache(date int64,store func(data cacheKey)) (err error)
 	FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*{{.Model}}, err error)
@@ -521,7 +523,7 @@ func (a {{.Table}}Do) All() (results []*{{.Model}},err error) {
 	}
 	return
 }
-func (a {{.Table}}Do) getByCache() (result *{{.Model}}, vaild bool) {
+func (a {{.Table}}Do) GetByCache() (result *{{.Model}}, vaild bool) {
 	if a.cacheWhere == nil || !{{.Table | lower}}Cacher.UseCache() {
 		return nil, false
 	}
@@ -535,11 +537,13 @@ func (a {{.Table}}Do) getByCache() (result *{{.Model}}, vaild bool) {
 	}
 	return result, true
 }
-func (a {{.Table}}Do) First() (*{{.Model}}, error) {
-	if result, ok := a.getByCache(); ok {
+func (a {{.Table}}Do) First(conds ...gen.Condition) (*{{.Model}}, error) {
+	if result, ok := a.Where(conds...).GetByCache(); ok {
 		return result, nil
 	}
-
+	if len(conds) > 0 {
+		return a.Where(conds...).First()
+	}
 	if result, err := a.Dao.First(); err != nil {
 		return nil, err
 	} else {
@@ -551,12 +555,14 @@ func (a {{.Table}}Do) First() (*{{.Model}}, error) {
 	}
 }
 
-func (a {{.Table}}Do) Take() (*{{.Model}}, error) {
+func (a {{.Table}}Do) Take(conds ...gen.Condition) (*{{.Model}}, error) {
 
-	if result, ok := a.getByCache(); ok {
+	if result, ok := a.Where(conds...).GetByCache(); ok {
 		return result, nil
 	}
-
+	if len(conds) > 0 {
+		return a.Where(conds...).Take()
+	}
 	if result, err := a.Dao.Take(); err != nil {
 		return nil, err
 	} else {
@@ -568,10 +574,12 @@ func (a {{.Table}}Do) Take() (*{{.Model}}, error) {
 	}
 }
 
-func (a {{.Table}}Do) Last() (*{{.Model}}, error) {
-
-	if result, ok := a.getByCache(); ok {
+func (a {{.Table}}Do) Last(conds ...gen.Condition) (*{{.Model}}, error) {
+	if result, ok := a.Where(conds...).GetByCache(); ok {
 		return result, nil
+	}
+	if len(conds) > 0 {
+		return a.Where(conds...).Last()
 	}
 
 	if result, err := a.Dao.Last(); err != nil {
@@ -585,7 +593,12 @@ func (a {{.Table}}Do) Last() (*{{.Model}}, error) {
 	}
 }
 
-func (a {{.Table}}Do) Find() ([]*{{.Model}}, error) {
+func (a {{.Table}}Do) Find(conds ...gen.Condition) ([]*{{.Model}}, error) {
+
+	if len(conds) > 0 {
+		return a.Where(conds...).Find()
+	}
+
 	if result, err := a.Dao.Find();err !=nil {
 		return nil, err
 	}else {

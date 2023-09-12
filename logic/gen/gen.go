@@ -70,7 +70,7 @@ func (r *sGen) Execute(in *genx.Execute) (err error) {
 		if in.Debug {
 			log.Println("格式化失败", in.File)
 		}
-		gfile.PutContents(in.File, string(buffer.Bytes()))
+		gfile.PutContents(in.File, buffer.String())
 		return err
 	}
 	if in.Debug {

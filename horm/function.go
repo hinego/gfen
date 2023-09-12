@@ -185,6 +185,30 @@ func (c *Column) Tag() string {
 	}
 	return fmt.Sprintf("`%v`", tag)
 }
+
+func (c *Column) Clone() *Column {
+	return &Column{
+		Name:       c.Name,
+		Desc:       c.Desc,
+		Type:       c.Type,
+		Tags:       c.Tags,
+		Index:      c.Index,
+		Unique:     c.Unique,
+		Checks:     c.Checks,
+		Uniques:    c.Uniques,
+		Caches:     c.Caches,
+		Primary:    c.Primary,
+		Increment:  c.Increment,
+		Step:       c.Step,
+		Sensitive:  c.Sensitive,
+		Validators: c.Validators,
+		Relation:   c.Relation,
+		modelType:  c.modelType,
+		Enums:      c.Enums,
+		Default:    c.Default,
+	}
+}
+
 func (c *Column) SetModelType(typ string) {
 	c.modelType = typ
 }
@@ -218,7 +242,8 @@ func (r *Table) TableName() string {
 func (r *Table) CacheKey() []*Table {
 	var data = make(map[string]*Table, 0)
 	var ret = make([]*Table, 0)
-	for _, v := range r.Column {
+	for _, ve := range r.Column {
+		v := ve.Clone()
 		if v.Primary {
 			data[v.Name] = &Table{
 				Name: ToName(v.Name),
@@ -228,10 +253,17 @@ func (r *Table) CacheKey() []*Table {
 			}
 		}
 		for _, v1 := range v.Caches {
-			key := ToName(v1)
+			var arr = strings.Split(v1, ":")
+			var name = arr[0]
+			key := ToName(name)
+			if len(arr) > 1 {
+				v.Default = arr[1]
+			} else {
+				v.Default = ""
+			}
 			if _, ok := data[key]; !ok {
 				data[key] = &Table{
-					Name: ToName(v1),
+					Name: key,
 					Column: []*Column{
 						v,
 					},
