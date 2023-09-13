@@ -87,7 +87,7 @@ func (r *sCtrl) filter(apis []*genx.API) (err error) {
 						fun.Path = fmt.Sprintf("/%s/%s/%s/%s", version.Name, api.Name, file.Name, fun.Name)
 					}
 					if fun.Tags == "" {
-						fun.Tags = strings.Title(file.Name)
+						fun.Tags = strings.Join([]string{strings.Title(api.Name), strings.Title(version.Name), strings.Title(file.Name)}, "")
 					}
 					if fun.Method == "" {
 						fun.Method = "post"
