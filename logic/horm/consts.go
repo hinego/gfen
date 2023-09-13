@@ -60,10 +60,12 @@ func (r *{{ $.Name | title}}) getCacheKeys() []string {
 func (r *{{ $.Name | title}}) getPrimaryKey() int64 {
 	return r.ID
 }
-func (r *{{ $.Name | title}}) deleted() bool {
-	return r.DeletedAt != 0
+func (r *{{ $.Name | title}}) deletedAt() uint {
+	return r.DeletedAt
 }
-
+func (r *{{ $.Name | title}}) destory() (info gen.ResultInfo,err error) {
+	return r.Query().Unscoped().Delete()
+}
 func (r *{{ $.Name | title}}) Tx(tx *Query) *{{ $.Name | title}} {
 	return &{{ $.Name | title}}{ {{ range .Column }} {{if .Title}}
 		{{ .Title }}: r.{{ .Title }}, {{end}} {{end}}
@@ -238,6 +240,7 @@ type I{{.Model}}Do interface {
 	CreateInBatches(values []*{{.Model}}, batchSize int) error
 	Save(values ...*{{.Model}}) error
 	First(conds ...gen.Condition) (*{{.Model}}, error)
+	Must(conds ...gen.Condition) (*{{.Model}})
 	Take(conds ...gen.Condition) (*{{.Model}}, error)
 	Last(conds ...gen.Condition) (*{{.Model}}, error)
 	GetByCache() (result *{{.Model}}, vaild bool)
@@ -539,6 +542,9 @@ func (a {{.Table}}Do) GetByCache() (result *{{.Model}}, vaild bool) {
 }
 func (a {{.Table}}Do) First(conds ...gen.Condition) (*{{.Model}}, error) {
 	if result, ok := a.Where(conds...).GetByCache(); ok {
+		if result == nil {
+			return nil, gorm.ErrRecordNotFound
+		}
 		return result, nil
 	}
 	if len(conds) > 0 {
@@ -554,10 +560,18 @@ func (a {{.Table}}Do) First(conds ...gen.Condition) (*{{.Model}}, error) {
 		return data, nil
 	}
 }
+func (a {{.Table}}Do) Must(conds ...gen.Condition) (*{{.Model}}) {
+	var data *{{.Model}}
+	data, _ = a.Where(conds...).First()
+	return data
+}
 
 func (a {{.Table}}Do) Take(conds ...gen.Condition) (*{{.Model}}, error) {
 
 	if result, ok := a.Where(conds...).GetByCache(); ok {
+		if result == nil {
+			return nil, gorm.ErrRecordNotFound
+		}
 		return result, nil
 	}
 	if len(conds) > 0 {
@@ -576,6 +590,9 @@ func (a {{.Table}}Do) Take(conds ...gen.Condition) (*{{.Model}}, error) {
 
 func (a {{.Table}}Do) Last(conds ...gen.Condition) (*{{.Model}}, error) {
 	if result, ok := a.Where(conds...).GetByCache(); ok {
+		if result == nil {
+			return nil, gorm.ErrRecordNotFound
+		}
 		return result, nil
 	}
 	if len(conds) > 0 {
@@ -752,7 +769,8 @@ type queryFace interface {
 type cacheKey interface {
 	getCacheKeys() []string
 	getPrimaryKey() int64
-	deleted() bool
+	deletedAt() uint
+	destory() (info gen.ResultInfo,err error)
 }
 type cacheValue struct {
 	Valid bool
@@ -833,7 +851,11 @@ func (r *cacheDriver) store(key string, value cacheKey) {
 		v.Valid = false
 		r.cache.Delete(key)
 	}
-	if value.deleted() { // 如果数据已经被删除了 那么就不要缓存了
+	if value.deletedAt() != 0 { // 如果数据已经被删除了 那么就不要缓存了
+		if value.deletedAt() == 2 {
+			value.destory()
+			return
+		}
 		return
 	}
 	r.cache.Store(key, &cacheValue{
