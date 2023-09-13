@@ -61,7 +61,7 @@ func (r *{{ $.Name | title}}) getPrimaryKey() int64 {
 	return r.ID
 }
 func (r *{{ $.Name | title}}) deletedAt() uint {
-	return r.DeletedAt
+	return uint(r.DeletedAt)
 }
 func (r *{{ $.Name | title}}) destory() (info gen.ResultInfo,err error) {
 	return r.Query().Unscoped().Delete()
