@@ -25,7 +25,7 @@ type {{.Name}}Req struct {
 	{{.}} {{end}}
 }
 type {{.Name}}Res struct {
-	g.Meta ` + "`mime:\"{{.Mime}}\" example:\"{{.Default}}\"`" + ` {{range .Response}}
+	g.Meta{{range .Response}}
 	{{.}} {{end}}
 }
 `

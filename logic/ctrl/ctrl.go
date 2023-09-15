@@ -92,9 +92,9 @@ func (r *sCtrl) filter(apis []*genx.API) (err error) {
 					if fun.Method == "" {
 						fun.Method = "post"
 					}
-					if fun.Mime == "" {
-						fun.Mime = "application/json"
-					}
+					// if fun.Mime == "" {
+					// 	// fun.Mime = "application/json"
+					// }
 					if fun.Summary == "" {
 						fun.Summary = strings.Title(fun.Name)
 					}
