@@ -239,6 +239,14 @@ var namer = schema.NamingStrategy{}
 func (r *Table) TableName() string {
 	return namer.TableName(r.Name)
 }
+func (r *Table) HasEnum() bool {
+	for _, v := range r.Column {
+		if v.Enums != nil {
+			return true
+		}
+	}
+	return false
+}
 func (r *Table) CacheKey() []*Table {
 	var data = make(map[string]*Table, 0)
 	var ret = make([]*Table, 0)
@@ -292,6 +300,20 @@ func (r *Enum) String() string {
 	switch v := r.Value.(type) {
 	case string:
 		return fmt.Sprintf(`"%v"`, v)
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+func (r *Enum) Typescript() string {
+	switch v := r.Value.(type) {
+	case string:
+		return fmt.Sprintf(`"%v"`, v)
+	case bool:
+		if v {
+			return "true"
+		} else {
+			return "false"
+		}
 	default:
 		return fmt.Sprintf("%v", v)
 	}

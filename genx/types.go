@@ -51,13 +51,14 @@ type (
 		Must        bool   //是否覆盖已有的代码
 	}
 	Execute struct {
-		Code    string
-		Data    any
-		Replace map[string]string
-		Map     map[string]any
-		File    string
-		Must    bool
-		Debug   bool
+		Code       string
+		Data       any
+		Replace    map[string]string
+		Map        map[string]any
+		File       string
+		Must       bool
+		Debug      bool
+		SkipFormat bool //是否格式化代码
 	}
 	Fun struct {
 		API      *API

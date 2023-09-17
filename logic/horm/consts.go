@@ -1111,3 +1111,55 @@ func (q *QueryTx) RollbackTo(name string) error {
 
 
 `
+const EnumTemplate = `package enmus
+
+import (
+	"github.com/hinego/gfen/reflectx"
+	"strings"
+)
+
+
+var Data = []*reflectx.Table{ {{range $k, $v := .Table}} 	{{range .Column}} {{if .Enums}}
+	{
+		Table: "{{$v.Name | ToName}}",
+		Name: "{{.Name | ToName}}",
+		Key: "{{$v.Name | ToName}}.{{.Name | ToName}}",
+		Enums: []*reflectx.Enum{  {{range .Enums.Enums}}
+			{
+				Name: "{{.Name | ToName}}",
+				Value: {{.String}},
+				Desc: "{{.Desc}}",
+				Typescript: {{$.SymbolQuota}}{{.Typescript}}{{$.SymbolQuota}},
+			}, {{end}}
+		},
+	}, {{end}}{{end}} {{end}} 
+}
+
+func DataMap() map[string][]*reflectx.Table {
+	var m = map[string][]*reflectx.Table{}
+	for _, v := range Data {
+		var tab = strings.ToLower(v.Table)
+		if _, ok := m[tab]; !ok {
+			m[tab] = []*reflectx.Table{}
+		}
+		m[tab] = append(m[tab], v)
+	}
+	return m
+}
+
+`
+const EnumTypeTemplate = `
+{{range $k, $v := .Table}}  {{range .Column}} {{if .Enums}}
+export namespace {{$v.Name | ToName}} {
+	export enum {{.Name | ToName}} { {{range .Enums.Enums}}   	
+		{{.Name | ToName}} = {{.Typescript}}, {{end}}
+	} 
+	export const {{.Name | ToName}}Map = new Map([ {{range .Enums.Enums}}
+		[{{.Typescript}}, { text: '{{.Desc}}' }],{{end}}
+	])
+} {{end}}  {{end}}{{end}}
+ export default { {{range $k, $v := .Table}}  {{if .HasEnum}} 
+	{{$v.Name | ToName}}, {{end}}  {{end}}
+ };
+
+`

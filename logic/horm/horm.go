@@ -27,6 +27,12 @@ func (r *sHorm) Generate(in *horm.Input) (err error) {
 	if err = r.migrate(); err != nil {
 		return err
 	}
+	if err = r.enmus(); err != nil {
+		return err
+	}
+	if err = r.typescript(); err != nil {
+		return err
+	}
 	if err = r.mapping(); err != nil {
 		return err
 	}
@@ -56,6 +62,22 @@ func (r *sHorm) migrate() (err error) {
 			"Imports": imports,
 		},
 		File: fmt.Sprintf("%s/migrate/migrate.gen.go", r.Path),
+		Must: true,
+	})
+}
+func (r *sHorm) enmus() (err error) {
+	return ssr.Gen().Execute(&genx.Execute{
+		Code: EnumTemplate,
+		Data: r.data(),
+		File: fmt.Sprintf("%s/enums/enums.gen.go", r.Path),
+		Must: true,
+	})
+}
+func (r *sHorm) typescript() (err error) {
+	return ssr.Gen().Execute(&genx.Execute{
+		Code: EnumTypeTemplate,
+		Data: r.data(),
+		File: fmt.Sprintf("%s/enums/enums.gen.ts", r.Path),
 		Must: true,
 	})
 }

@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -45,6 +46,13 @@ func (r *sGen) Execute(in *genx.Execute) (err error) {
 			"lower":    strings.ToLower,
 			"basename": gfile.Basename,
 			"ToName":   horm.ToName,
+			"jsonName": func(str string) string {
+				matchFirstCap := regexp.MustCompile("(.)([A-Z][a-z]+)")
+				matchAllCap := regexp.MustCompile("([a-z0-9])([A-Z])")
+				snake := matchFirstCap.ReplaceAllString(str, "${1}_${2}")
+				snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
+				return strings.ToLower(snake)
+			},
 		}
 		data []byte
 	)
@@ -66,16 +74,22 @@ func (r *sGen) Execute(in *genx.Execute) (err error) {
 	if err = code.Execute(&buffer, dataMap); err != nil {
 		return
 	}
-	if data, err = format.Source(buffer.Bytes()); err != nil {
-		if in.Debug {
-			log.Println("格式化失败", in.File)
+
+	if in.SkipFormat || strings.HasSuffix(in.File, ".go") {
+		if data, err = format.Source(buffer.Bytes()); err != nil {
+			if in.Debug {
+				log.Println("格式化失败", in.File)
+			}
+			gfile.PutContents(in.File, buffer.String())
+			return err
 		}
-		gfile.PutContents(in.File, buffer.String())
-		return err
+		if in.Debug {
+			log.Println(string(data))
+		}
+	} else {
+		data = buffer.Bytes()
 	}
-	if in.Debug {
-		log.Println(string(data))
-	}
+
 	return gfile.PutContents(in.File, string(data))
 }
 func (r *sGen) ClearPath(keep string, paths ...string) {
