@@ -14,12 +14,12 @@ export namespace {{$v.Name | ToName}} { {{range .Enum}}
 	{ {{range .Data}}
 		 {{.Json}}{{if .Optional}}?{{end}}: {{.TypeNameArray}};  {{end}}
 	}   {{end}}  {{range .Func}}  
-	export async function {{.Fun | ToName}} (body: {{.In.TypeNameArray | ToName}} , options?: { [key: string]: any })
+	export async function {{.Fun | ToName}} ({{if .In.Have}}body: {{.In.TypeNameArray | ToName}} , {{end}}options?: { [key: string]: any })
 	{
 		 return request<{{.Out.TypeNameArray | ToName}}>('{{.Path}}', {
 			  method: 'POST',
 			  headers: { 'Content-Type': 'application/json' },
-			  data: body,
+			  {{if .In.Have}}data: body,{{end}}
 			  ...(options || {}),
 		 });
 	} {{end}}

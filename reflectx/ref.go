@@ -82,6 +82,9 @@ type Field struct {
 	Optional   bool     `json:"optional,omitempty"`
 }
 
+func (r *Field) Have() bool {
+	return len(r.Data) != 0
+}
 func (r *Field) TypeName() string {
 	var arr = strings.Split(r.Type, ".")
 	Name := arr[len(arr)-1]
@@ -254,29 +257,33 @@ func Parse(data []*Function, params *FieldParams) []*Func {
 	}
 	return funs
 }
-func ParseObject(data []*Function, namer func(name FunName) string, params *FieldParams) []*Object {
-	var maps = map[string]*Object{}
+func ParseObject(data []*Function, namer func(name FunName) string, params *FieldParams, maps map[string]*Object) []*Object {
+	// var maps = map[string]*Object{}
 	var fs = Parse(data, params)
 	for _, v := range fs {
 		var name = namer(v.FunName)
-		var key = strings.ToLower(name)
+		var key = camelToSnake(name)
 		if _, ok := maps[key]; !ok {
 			maps[key] = &Object{
 				Name: key,
 			}
 			if vv, ok1 := EnumMap[key]; ok1 {
+				// log.Println("key111", len(key), key)
 				maps[key].Enum = vv
 			}
 		}
 		maps[key].Func = append(maps[key].Func, v)
 	}
+
 	for k, v := range EnumMap {
-		k = strings.ToLower(k)
 		if _, ok := maps[k]; !ok {
+			log.Println("key222", k, len(k))
 			maps[k] = &Object{
 				Name: k,
 				Enum: v,
 			}
+		} else {
+			log.Println("key333", k, len(k))
 		}
 	}
 
@@ -412,7 +419,7 @@ func inspectStruct(t reflect.Type, name FunName) *Field {
 			// }
 			var arrayFlag bool
 			ft.Type, arrayFlag = Ref(ft.Type)
-			if t.Name() == "PageReq" && ft.Name == "Data" {
+			if t.Name() == "PageRes" && ft.Name == "Data" {
 				arrayFlag = true
 				if tt, ok := TypeMapping[name.File]; ok {
 					ft.Type, _ = Ref(reflect.TypeOf(tt))
