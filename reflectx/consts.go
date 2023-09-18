@@ -12,7 +12,7 @@ export namespace {{$v.Name | ToName}} { {{range .Enum}}
 	])  {{end}}   {{range .Fields}}
 	export interface {{.TypeName | ToName}} 
 	{ {{range .Data}}
-		 {{.Json}}?: {{.TypeNameArray}};  {{end}}
+		 {{.Json}}{{if .Optional}}?{{end}}: {{.TypeNameArray}};  {{end}}
 	}   {{end}}  {{range .Func}}  
 	export async function {{.Fun | ToName}} (body: {{.In.TypeNameArray | ToName}} , options?: { [key: string]: any })
 	{

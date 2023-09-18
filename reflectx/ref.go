@@ -79,6 +79,7 @@ type Field struct {
 	Import     string   `json:"import,omitempty"`
 	Array      bool     `json:"array,omitempty"`
 	Decimal    bool     `json:"decimal,omitempty"`
+	Optional   bool     `json:"optional,omitempty"`
 }
 
 func (r *Field) TypeName() string {
@@ -431,10 +432,14 @@ func inspectStruct(t reflect.Type, name FunName) *Field {
 			childField.Decimal = IsDecimal(childField.Type)
 
 			childField.Import = mappingImport(childField.Typescript)
+			if strings.Contains(strings.ToLower(childField.Json), "omitempty") {
+				childField.Optional = true
+			}
 			var aar2 = strings.Split(childField.Json, ",")
 			if len(aar2) > 1 {
 				childField.Json = aar2[0]
 			}
+
 			if childField.Json == "-" {
 				continue
 			}
