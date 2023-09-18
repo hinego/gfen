@@ -1,4 +1,4 @@
-package reflectx
+package rex
 
 import (
 	"log"
@@ -15,19 +15,9 @@ import (
 
 var module string
 var Mapping = map[string]string{
-	"big.Int":         "string",
-	"decimal.Decimal": "string",
+	"big.Int":         "Decimal",
+	"decimal.Decimal": "Decimal",
 }
-
-func IsDecimal(goType string) bool {
-	switch goType {
-	case "big.Int", "decimal.Decimal":
-		return true
-	default:
-		return false
-	}
-}
-
 var ImportMap = map[string]string{
 	"decimal": "import { Decimal } from 'decimal.js';",
 }
@@ -71,8 +61,6 @@ type Field struct {
 	Path       string   `json:"path,omitempty"`
 	Data       []*Field `json:"data,omitempty"`
 	Import     string   `json:"import,omitempty"`
-	Array      bool     `json:"array,omitempty"`
-	Decimal    bool     `json:"decimal,omitempty"`
 }
 
 func (r *Field) TypeName() string {
@@ -85,13 +73,6 @@ func (r *Field) TypeName() string {
 		return r.Typescript
 	}
 	return Name
-}
-func (r *Field) TypeNameArray() string {
-	var name = r.TypeName()
-	if r.Array {
-		return name + "[]"
-	}
-	return name
 }
 func Fields(field *Field) []*Field {
 	// var data = []*Field{}
@@ -148,21 +129,6 @@ type Object struct {
 	Name string   `json:"name"`
 	Func []*Func  `json:"func"`
 	Enum []*Table `json:"enum"`
-}
-
-func (r *Object) Fields() []*Field {
-	var data = []*Field{}
-	var exists = map[string]bool{}
-	for _, v := range r.Func {
-		var d2 = v.Fields()
-		for _, v2 := range d2 {
-			if _, ok := exists[v2.TypeName()]; !ok {
-				exists[v2.TypeName()] = true
-				data = append(data, v2)
-			}
-		}
-	}
-	return data
 }
 
 type Function struct {
@@ -352,13 +318,11 @@ func inspectStruct(t reflect.Type) *Field {
 	if t.Kind() != reflect.Struct {
 		t = t.Elem()
 	}
-
 	field := &Field{
 		Type:    t.String(),
 		Package: t.PkgPath(),
 	}
 	field.Typescript = mapping(t.String())
-	field.Decimal = IsDecimal(t.String())
 	field.Import = mappingImport(field.Typescript)
 	if t.Kind() == reflect.Struct {
 		for i := 0; i < t.NumField(); i++ {
@@ -378,32 +342,19 @@ func inspectStruct(t reflect.Type) *Field {
 			for ft.Type.Kind() == reflect.Ptr {
 				ft.Type = ft.Type.Elem()
 			}
-			arrayFlag := false
-			if ft.Type.Kind() == reflect.Slice {
-				arrayFlag = true
-				ft.Type = ft.Type.Elem() // 获取slice元素的类型
-			}
-			for ft.Type.Kind() == reflect.Ptr {
-				ft.Type = ft.Type.Elem()
-			}
+
 			childField := &Field{
 				Name:    fieldName,
 				Type:    ft.Type.String(),
 				Json:    ft.Tag.Get("json"),
 				Enum:    ft.Tag.Get("enum"),
 				Package: ft.Type.PkgPath(),
-				Array:   arrayFlag,
 			}
 			childField.Typescript = mapping(childField.Type)
-			childField.Decimal = IsDecimal(childField.Type)
-
 			childField.Import = mappingImport(childField.Typescript)
 			var aar2 = strings.Split(childField.Json, ",")
 			if len(aar2) > 1 {
 				childField.Json = aar2[0]
-			}
-			if childField.Json == "-" {
-				continue
 			}
 			if childField.Json == "" {
 				childField.Json = camelToSnake(fieldName)
