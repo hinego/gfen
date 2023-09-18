@@ -10,13 +10,9 @@ export namespace {{$v.Name | ToName}} { {{range .Enum}}
 	export const {{.Name | ToName}}Map = new Map([ {{range .Enums}}
 		[{{.Typescript}}, { text: '{{.Desc}}' }],{{end}}
 	])  {{end}}   {{range .Fields}}
-	export class {{.TypeName | ToName}} 
+	export interface {{.TypeName | ToName}} 
 	{ {{range .Data}}
 		 {{.Json}}?: {{.TypeNameArray}};  {{end}}
-	//   {{range .Data}} {{if .Decimal}}
-	//   	Get{{.Json | ToName}}(): Decimal {
-    //     	return new Decimal(this.{{.Json}} || 0);
-    // 	}  {{end}}{{end}}
 	}   {{end}}  {{range .Func}}  
 	export async function {{.Fun | ToName}} (body: {{.In.TypeNameArray | ToName}} , options?: { [key: string]: any })
 	{

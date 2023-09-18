@@ -909,6 +909,9 @@ var ( {{range .Table}}
 		level: {{.CacheLevel}},
 
 	} {{end}}
+	TypeMapping = map[string]any{ {{range .Table}}
+		"{{ .Name | lower }}": &{{ .Name | ToName }}{},  {{end}}
+	}
 )
 
 

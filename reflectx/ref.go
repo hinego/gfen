@@ -18,7 +18,13 @@ var Mapping = map[string]string{
 	"big.Int":         "string",
 	"decimal.Decimal": "string",
 }
+var TypeMapping = map[string]any{}
 
+func SetTypeMapping(m map[string]any) {
+	for k, v := range m {
+		TypeMapping[k] = v
+	}
+}
 func IsDecimal(goType string) bool {
 	switch goType {
 	case "big.Int", "decimal.Decimal":
@@ -215,13 +221,13 @@ func (r *FieldParams) InData() *Field {
 	if r.InName == "" {
 		return nil
 	}
-	return Get(reflect.TypeOf(r.InType))
+	return Get(reflect.TypeOf(r.InType), FunName{})
 }
 func (r *FieldParams) OutData() *Field {
 	if r.OutName == "" {
 		return nil
 	}
-	return Get(reflect.TypeOf(r.OutType))
+	return Get(reflect.TypeOf(r.OutType), FunName{})
 }
 func Parse(data []*Function, params *FieldParams) []*Func {
 	var (
@@ -230,8 +236,8 @@ func Parse(data []*Function, params *FieldParams) []*Func {
 	)
 	var funs = []*Func{}
 	for _, v := range data {
-		var in = Get(v.In)
-		var out = Get(v.Out)
+		var in = Get(v.In, v.FunName)
+		var out = Get(v.Out, v.FunName)
 		if inData != nil {
 			in = inData.SetFiled(params.InName, in)
 		}
@@ -348,7 +354,24 @@ func camelToSnake(str string) string {
 	snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
 	return strings.ToLower(snake)
 }
-func inspectStruct(t reflect.Type) *Field {
+
+func Ref(t reflect.Type) (reflect.Type, bool) {
+	// var t = reflect.TypeOf(data)
+	var isArray = false
+	var i = 0
+	for t.Kind() == reflect.Ptr {
+		i += 1
+		t = t.Elem()
+		// log.Println("name", i, t.Name(), t.String())
+		for t.Kind() == reflect.Slice {
+			t = t.Elem()
+			isArray = true
+		}
+	}
+	return t, isArray
+}
+
+func inspectStruct(t reflect.Type, name FunName) *Field {
 	if t.Kind() != reflect.Struct {
 		t = t.Elem()
 	}
@@ -369,23 +392,33 @@ func inspectStruct(t reflect.Type) *Field {
 			fieldName := ft.Name
 			if ft.Anonymous {
 				// 如果该字段是一个匿名字段，则将其展开
-				field.Data = append(field.Data, inspectStruct(ft.Type).Data...)
+				field.Data = append(field.Data, inspectStruct(ft.Type, name).Data...)
 				if ft.Name == "Meta" {
 					field.Path = ft.Tag.Get("path")
 				}
 				continue
 			}
-			for ft.Type.Kind() == reflect.Ptr {
-				ft.Type = ft.Type.Elem()
-			}
-			arrayFlag := false
-			if ft.Type.Kind() == reflect.Slice {
+			// for ft.Type.Kind() == reflect.Ptr {
+			// 	ft.Type = ft.Type.Elem()
+			// }
+			// arrayFlag := false
+			// if ft.Type.Kind() == reflect.Slice {
+			// 	arrayFlag = true
+			// 	ft.Type = ft.Type.Elem() // 获取slice元素的类型
+			// }
+			// for ft.Type.Kind() == reflect.Ptr {
+			// 	ft.Type = ft.Type.Elem()
+			// }
+			var arrayFlag bool
+			ft.Type, arrayFlag = Ref(ft.Type)
+			if t.Name() == "PageReq" && ft.Name == "Data" {
 				arrayFlag = true
-				ft.Type = ft.Type.Elem() // 获取slice元素的类型
+				if tt, ok := TypeMapping[name.File]; ok {
+					ft.Type, _ = Ref(reflect.TypeOf(tt))
+				}
 			}
-			for ft.Type.Kind() == reflect.Ptr {
-				ft.Type = ft.Type.Elem()
-			}
+			// log.Println("ft.Anonymous", t.Name(), ft.Name, ft.Type, name.File)
+
 			childField := &Field{
 				Name:    fieldName,
 				Type:    ft.Type.String(),
@@ -410,7 +443,7 @@ func inspectStruct(t reflect.Type) *Field {
 			}
 			if strings.Contains(childField.Package, module) || childField.Package == "main" {
 				if ft.Type.Kind() == reflect.Struct {
-					childField.Data = inspectStruct(ft.Type).Data
+					childField.Data = inspectStruct(ft.Type, name).Data
 				}
 			}
 			field.Data = append(field.Data, childField)
@@ -418,9 +451,9 @@ func inspectStruct(t reflect.Type) *Field {
 	}
 	return field
 }
-func Get(data reflect.Type) *Field {
+func Get(data reflect.Type, name FunName) *Field {
 	_ = GetModule()
-	ff := inspectStruct(data)
+	ff := inspectStruct(data, name)
 	// var arr = strings.Split(ff.Type, ".")
 	// ff.Name = arr[len(arr)-1]
 	return ff
