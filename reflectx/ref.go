@@ -15,8 +15,9 @@ import (
 
 var module string
 var Mapping = map[string]string{
-	"big.Int":         "string",
-	"decimal.Decimal": "string",
+	"big.Int":               "string",
+	"decimal.Decimal":       "string",
+	"soft_delete.DeletedAt": "number",
 }
 var TypeMapping = map[string]any{}
 
@@ -80,6 +81,17 @@ type Field struct {
 	Array      bool     `json:"array,omitempty"`
 	Decimal    bool     `json:"decimal,omitempty"`
 	Optional   bool     `json:"optional,omitempty"`
+	Desc       string   `json:"desc,omitempty"`
+}
+
+func (r *Field) IsOptional() bool {
+	var i = 0
+	for _, v := range r.Data {
+		if !v.Optional {
+			i += 1
+		}
+	}
+	return i == 0
 }
 
 func (r *Field) Have() bool {
@@ -104,16 +116,6 @@ func (r *Field) TypeNameArray() string {
 	return name
 }
 func Fields(field *Field) []*Field {
-	// var data = []*Field{}
-	// var arr = map[string]{}
-	// for _, v := range field.Data {
-	// 	if len(v.Data) != 0 {
-	// 		data = append(data, v)
-	// 		data = append(data, Fields(v)...)
-	// 	}
-	// }
-	// return data
-
 	var data = []*Field{}
 	var arr = map[string]*Field{}
 	for _, v := range field.Data {
@@ -139,10 +141,11 @@ type FunName struct {
 }
 type Func struct {
 	FunName
-	Path   string `json:"path"`
-	Method string `json:"method"`
-	In     *Field `json:"in"`
-	Out    *Field `json:"out"`
+	Path   string    `json:"path"`
+	Method string    `json:"method"`
+	In     *Field    `json:"in"`
+	Out    *Field    `json:"out"`
+	Func   *Function `json:"func"`
 }
 
 func (r *Func) Fields() []*Field {
@@ -155,11 +158,27 @@ func (r *Func) Fields() []*Field {
 }
 
 type Object struct {
-	Name string   `json:"name"`
-	Func []*Func  `json:"func"`
-	Enum []*Table `json:"enum"`
+	Name   string   `json:"name"`
+	Func   []*Func  `json:"func"`
+	Enum   []*Table `json:"enum"`
+	Data   *Field   `json:"data"`
+	Create *Field   `json:"create"`
+	Update *Field   `json:"update"`
 }
 
+func (r *Object) Sync() {
+	for _, v := range r.Func {
+		if r.Data == nil {
+			r.Data = v.Func.GetData()
+		}
+		if r.Create == nil {
+			r.Create = v.Func.GetCreate()
+		}
+		if r.Update == nil {
+			r.Update = v.Func.GetUpdate()
+		}
+	}
+}
 func (r *Object) Fields() []*Field {
 	var data = []*Field{}
 	var exists = map[string]bool{}
@@ -180,6 +199,47 @@ type Function struct {
 	In  reflect.Type
 	Out reflect.Type
 }
+
+func (r *Function) GetData() *Field {
+	var fun = strings.ToLower(r.Fun)
+	if fun == "get" {
+		return Get(r.Out, r.FunName)
+	}
+	return nil
+}
+func (r *Function) GetCreate() *Field {
+	var fun = strings.ToLower(r.Fun)
+	if fun == "create" {
+		var field reflect.StructField
+		var ok bool
+		var tp = r.In
+		for tp.Kind() != reflect.Struct {
+			tp = tp.Elem()
+		}
+		if field, ok = tp.FieldByName("Data"); !ok {
+			return nil
+		}
+		return Get(field.Type, r.FunName)
+	}
+	return nil
+}
+func (r *Function) GetUpdate() *Field {
+	var fun = strings.ToLower(r.Fun)
+	if fun == "update" {
+		var field reflect.StructField
+		var ok bool
+		var tp = r.In
+		for tp.Kind() != reflect.Struct {
+			tp = tp.Elem()
+		}
+		if field, ok = tp.FieldByName("Data"); !ok {
+			return nil
+		}
+		return Get(field.Type, r.FunName)
+	}
+	return nil
+}
+
 type FieldParams struct {
 	InType  any
 	InName  string
@@ -253,6 +313,7 @@ func Parse(data []*Function, params *FieldParams) []*Func {
 			In:      in,
 			Out:     out,
 			Path:    in.Path,
+			Func:    v,
 		})
 	}
 	return funs
@@ -289,6 +350,7 @@ func ParseObject(data []*Function, namer func(name FunName) string, params *Fiel
 
 	var datas = []*Object{}
 	for _, v := range maps {
+		v.Sync()
 		datas = append(datas, v)
 	}
 	return datas
@@ -406,17 +468,7 @@ func inspectStruct(t reflect.Type, name FunName) *Field {
 				}
 				continue
 			}
-			// for ft.Type.Kind() == reflect.Ptr {
-			// 	ft.Type = ft.Type.Elem()
-			// }
-			// arrayFlag := false
-			// if ft.Type.Kind() == reflect.Slice {
-			// 	arrayFlag = true
-			// 	ft.Type = ft.Type.Elem() // 获取slice元素的类型
-			// }
-			// for ft.Type.Kind() == reflect.Ptr {
-			// 	ft.Type = ft.Type.Elem()
-			// }
+
 			var arrayFlag bool
 			ft.Type, arrayFlag = Ref(ft.Type)
 			if t.Name() == "PageRes" && ft.Name == "Data" {
@@ -425,13 +477,13 @@ func inspectStruct(t reflect.Type, name FunName) *Field {
 					ft.Type, _ = Ref(reflect.TypeOf(tt))
 				}
 			}
-			// log.Println("ft.Anonymous", t.Name(), ft.Name, ft.Type, name.File)
 
 			childField := &Field{
 				Name:    fieldName,
 				Type:    ft.Type.String(),
 				Json:    ft.Tag.Get("json"),
 				Enum:    ft.Tag.Get("enum"),
+				Desc:    ft.Tag.Get("dc"),
 				Package: ft.Type.PkgPath(),
 				Array:   arrayFlag,
 			}
