@@ -120,7 +120,6 @@ func Fields(field *Field) []*Field {
 	var arr = map[string]*Field{}
 	for _, v := range field.Data {
 		if len(v.Data) != 0 {
-			// data = append(data, v)
 			arr[v.TypeName()] = v
 			for _, vv := range Fields(v) {
 				arr[vv.TypeName()] = vv
@@ -158,6 +157,7 @@ func (r *Func) Fields() []*Field {
 }
 
 type Object struct {
+	FunName
 	Name   string   `json:"name"`
 	Func   []*Func  `json:"func"`
 	Enum   []*Table `json:"enum"`
@@ -167,6 +167,10 @@ type Object struct {
 }
 
 func (r *Object) Sync() {
+	for _, v := range r.Func {
+		r.FunName = v.FunName
+		break
+	}
 	for _, v := range r.Func {
 		if r.Data == nil {
 			r.Data = v.Func.GetData()
@@ -338,20 +342,26 @@ func ParseObject(data []*Function, namer func(name FunName) string, params *Fiel
 
 	for k, v := range EnumMap {
 		if _, ok := maps[k]; !ok {
-			log.Println("key222", k, len(k))
 			maps[k] = &Object{
 				Name: k,
 				Enum: v,
 			}
 		} else {
-			log.Println("key333", k, len(k))
 		}
 	}
-
+	var funName *FunName
 	var datas = []*Object{}
 	for _, v := range maps {
+		if v.FunName.Version != "" {
+			funName = &v.FunName
+		}
 		v.Sync()
 		datas = append(datas, v)
+	}
+	for _, v := range datas {
+		if v.FunName.Version == "" && funName != nil {
+			v.FunName = *funName
+		}
 	}
 	return datas
 }
@@ -432,7 +442,18 @@ func Ref(t reflect.Type) (reflect.Type, bool) {
 	for t.Kind() == reflect.Ptr {
 		i += 1
 		t = t.Elem()
-		// log.Println("name", i, t.Name(), t.String())
+		for t.Kind() == reflect.Slice {
+			t = t.Elem()
+			isArray = true
+		}
+	}
+	for t.Kind() == reflect.Slice {
+		t = t.Elem()
+		isArray = true
+	}
+	for t.Kind() == reflect.Ptr {
+		i += 1
+		t = t.Elem()
 		for t.Kind() == reflect.Slice {
 			t = t.Elem()
 			isArray = true
@@ -487,6 +508,11 @@ func inspectStruct(t reflect.Type, name FunName) *Field {
 				Package: ft.Type.PkgPath(),
 				Array:   arrayFlag,
 			}
+			var dcArr = strings.Split(childField.Desc, ":")
+			if len(dcArr) > 1 {
+				childField.Desc = dcArr[0]
+			}
+
 			childField.Typescript = mapping(childField.Type)
 			childField.Decimal = IsDecimal(childField.Type)
 
@@ -506,6 +532,9 @@ func inspectStruct(t reflect.Type, name FunName) *Field {
 				childField.Json = camelToSnake(fieldName)
 			}
 			if strings.Contains(childField.Package, module) || childField.Package == "main" {
+				// ft.Type, arrayFlag = Ref(ft.Type)
+				// childField.Array = arrayFlag
+
 				if ft.Type.Kind() == reflect.Struct {
 					childField.Data = inspectStruct(ft.Type, name).Data
 				}

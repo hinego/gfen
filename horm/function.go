@@ -82,14 +82,56 @@ func (r *Type) Package() string {
 	}
 	return ref.Type().PkgPath()
 }
-func (c *Relation) Tag() string {
-	var tags []string
-	tags = append(tags, fmt.Sprintf("foreignKey:%s", ToName(c.Foreign)))
-	tags = append(tags, fmt.Sprintf("references:%s", ToName(c.Reference)))
-	if len(tags) == 0 {
-		return ""
+
+func GenTag(data map[string]any) string {
+	var builder strings.Builder
+	var tagSlice []string
+	for k, v := range data {
+		var tags []string
+		switch e := v.(type) {
+		case map[string]string:
+			for k1, v1 := range e {
+				if v1 == "" {
+					tags = append(tags, k1)
+				} else {
+					tags = append(tags, fmt.Sprintf("%s:%s", k1, v1))
+				}
+			}
+		case string:
+			tags = append(tags, e)
+		}
+
+		if len(tags) == 0 {
+			continue
+		}
+		tag := fmt.Sprintf(`%v:"%v"`, k, strings.Join(tags, ";"))
+		tagSlice = append(tagSlice, tag)
+		// builder.WriteString(tag)
+		// builder.WriteString(" ")
 	}
-	return "`gorm:\"" + strings.Join(tags, ";") + "\"`"
+	sort.Slice(tagSlice, func(i, j int) bool {
+		return tagSlice[i] > tagSlice[j]
+	})
+	builder.WriteString("`")
+	for i, v := range tagSlice {
+		if i != 0 {
+			builder.WriteString(" ")
+		}
+		builder.WriteString(v)
+	}
+	builder.WriteString("`")
+	return builder.String()
+}
+
+func (c *Relation) Tag() string {
+	var mapGorm = map[string]string{
+		"foreignKey": ToName(c.Foreign),
+		"references": ToName(c.Reference),
+	}
+	var tags = map[string]any{
+		"gorm": mapGorm,
+	}
+	return GenTag(tags)
 }
 func (c *Relation) ForeignName() string {
 	return ToName(c.Foreign)
@@ -178,12 +220,24 @@ func (c *Column) Tag() string {
 	if len(tags) == 0 {
 		return ""
 	}
-
-	tag := fmt.Sprintf(`gorm:"%v" json:"%v"`, strings.Join(tags, ";"), c.Name)
-	if c.Sensitive {
-		tag = fmt.Sprintf(`gorm:"%v" json:"-"`, strings.Join(tags, ";"))
+	var tagMap = map[string]any{
+		"gorm": strings.Join(tags, ";"),
+		"json": c.Name,
 	}
-	return fmt.Sprintf("`%v`", tag)
+	if c.Desc != "" {
+		tagMap["dc"] = c.Desc
+	} else {
+		tagMap["dc"] = c.Name
+	}
+	if c.Sensitive {
+		tagMap["json"] = "-"
+	}
+	return GenTag(tagMap)
+	// tag := fmt.Sprintf(`gorm:"%v" json:"%v"`, strings.Join(tags, ";"), c.Name)
+	// if c.Sensitive {
+	// 	tag = fmt.Sprintf(`gorm:"%v" json:"-"`, strings.Join(tags, ";"))
+	// }
+	// return fmt.Sprintf("`%v`", tag)
 }
 
 func (c *Column) Clone() *Column {

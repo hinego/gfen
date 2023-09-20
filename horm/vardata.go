@@ -18,18 +18,22 @@ var (
 				Type:      Int64,
 				Increment: true,
 				Primary:   true,
+				Desc:      "ID",
 			},
 			{
 				Name: "created_at",
 				Type: Int64,
+				Desc: "创建时间",
 			},
 			{
 				Name: "updated_at",
 				Type: Int64,
+				Desc: "更新时间",
 			},
 			{
 				Name: "deleted_at",
 				Type: DeletedAt,
+				Desc: "删除时间",
 			},
 		},
 	}
