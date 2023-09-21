@@ -24,6 +24,7 @@ export namespace {{$v.Name | ToName}} { {{range .Enum}}
 				name:"{{.Json}}",
 				desc:"{{.Desc}}",
 				type:"{{.Typescript}}",
+				table:"{{.Table}}",
 			}, {{end}}
 	] {{end}} {{if $v.Create}}  
 	export const CreateColums: Func.Column[] = [ {{range $v.Create.Data}} 
@@ -31,6 +32,7 @@ export namespace {{$v.Name | ToName}} { {{range .Enum}}
 				name:"{{.Json}}",
 				desc:"{{.Desc}}",
 				type:"{{.Typescript}}",
+				table:"{{.Table}}",
 			}, {{end}}
 	] {{end}} {{if $v.Update}}  
 	export const UpdateColums: Func.Column[] = [ {{range $v.Update.Data}} 
@@ -38,6 +40,7 @@ export namespace {{$v.Name | ToName}} { {{range .Enum}}
 				name:"{{.Json}}",
 				desc:"{{.Desc}}",
 				type:"{{.Typescript}}",
+				table:"{{.Table}}",
 			}, {{end}}
 	] {{end}}
 
@@ -71,6 +74,7 @@ export namespace Func {
         type: string;
         sorter?: boolean;
         required?: boolean;
+		table?: string;
     }
 	export interface Sorter 
 	{
@@ -112,8 +116,8 @@ export namespace Func {
 		}
 	}
 
-	export const FetchFind = ()  => {
-		const path = window.location.pathname.toLowerCase()+"/fetch";
+	export const FetchFind = (name?: string)  => {
+		const path = name ? name + "/fetch" : window.location.pathname.toLowerCase()+"/fetch";
 		switch (path) { {{range $k, $v := .Data}}  {{range .Func}} {{if eq .Fun "fetch"}}
 			case '{{.Path | lower}}': return {{$v.Name | ToName}}.{{.Fun | ToName}}; {{end}} {{end}} {{end}}
 			default: return undefined;

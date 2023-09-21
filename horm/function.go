@@ -229,6 +229,9 @@ func (c *Column) Tag() string {
 	} else {
 		tagMap["dc"] = c.Name
 	}
+	if c.Relation != nil {
+		tagMap["table"] = c.Relation.RefTable
+	}
 	if c.Sensitive {
 		tagMap["json"] = "-"
 	}

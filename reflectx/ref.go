@@ -82,6 +82,7 @@ type Field struct {
 	Decimal    bool     `json:"decimal,omitempty"`
 	Optional   bool     `json:"optional,omitempty"`
 	Desc       string   `json:"desc,omitempty"`
+	Table      string   `json:"table,omitempty"`
 }
 
 func (r *Field) IsOptional() bool {
@@ -505,6 +506,7 @@ func inspectStruct(t reflect.Type, name FunName) *Field {
 				Json:    ft.Tag.Get("json"),
 				Enum:    ft.Tag.Get("enum"),
 				Desc:    ft.Tag.Get("dc"),
+				Table:   ft.Tag.Get("table"),
 				Package: ft.Type.PkgPath(),
 				Array:   arrayFlag,
 			}
