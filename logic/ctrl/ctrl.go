@@ -215,6 +215,7 @@ func (r *sCtrl) apiFunStruct(data *genx.Fun) (err error) {
 	type StructInput struct {
 		*genx.Function
 		VersionName string
+		FileName    string
 	}
 	var (
 		api     = data.API
@@ -226,6 +227,7 @@ func (r *sCtrl) apiFunStruct(data *genx.Fun) (err error) {
 			Data: StructInput{
 				Function:    fun,
 				VersionName: version.Name,
+				FileName:    file.Name,
 			},
 			Map:  map[string]any{},
 			File: fmt.Sprintf(r.api+"/%s/%s/%s/%s_%s_%s_%s.go", api.Name, version.Name, file.Name, api.Name, version.Name, file.Name, fun.Name),

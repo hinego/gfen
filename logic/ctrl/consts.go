@@ -1,6 +1,6 @@
 package ctrl
 
-const structInterface = `package {{.VersionName}}
+const structInterface = `package {{.FileName | lower}}
 
 import (
 	"context"
@@ -12,8 +12,7 @@ type I{{.FileName}} interface {
 	{{end}}
 }
 `
-const structTemplate = `
-package {{.VersionName}}
+const structTemplate = `package {{.FileName | lower}}
 
 import (
 	"github.com/gogf/gf/v2/frame/g" {{range .Packages}}
@@ -29,7 +28,7 @@ type {{.Name}}Res struct {
 	{{.}} {{end}}
 }
 `
-const controllerTemplate = `package {{.ApiName}}
+const controllerTemplate = `package {{.VersionName | lower}}
 
 import (
 	"context"
@@ -43,7 +42,7 @@ func (r *controller{{title .VersionName}}) {{title .FunctionName}}(ctx context.C
 	return nil, gerror.NewCode(gcode.CodeNotImplemented) {{end}}
 }
 `
-const initTemplate = `package {{.ApiName}}
+const initTemplate = `package {{.VersionName | lower}}
 
 import (
 	"github.com/sucold/starter/internal/controller"
