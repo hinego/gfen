@@ -235,6 +235,15 @@ func (c *Column) Tag() string {
 	if c.Sensitive {
 		tagMap["json"] = "-"
 	}
+	if c.HideTable {
+		tagMap["hideTable"] = "true"
+	}
+	if c.HideSearch {
+		tagMap["hideSearch"] = "true"
+	}
+	if c.Ts != "" {
+		tagMap["ts"] = c.Ts
+	}
 	return GenTag(tagMap)
 	// tag := fmt.Sprintf(`gorm:"%v" json:"%v"`, strings.Join(tags, ";"), c.Name)
 	// if c.Sensitive {

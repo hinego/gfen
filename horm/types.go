@@ -64,6 +64,9 @@ type (
 		modelType  string
 		Enums      *Enums
 		Default    string
+		HideTable  bool   //前端表中默认是否隐藏
+		HideSearch bool   //前端搜索中默认是否隐藏
+		Ts         string // 前端映射的Ts类型
 	}
 	Table struct {
 		Name        string
