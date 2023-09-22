@@ -67,6 +67,8 @@ type (
 		HideTable  bool   //前端表中默认是否隐藏
 		HideSearch bool   //前端搜索中默认是否隐藏
 		Ts         string // 前端映射的Ts类型
+		Table      string //此字段所在的表名
+		Ellipsis   bool   //是否省略
 	}
 	Table struct {
 		Name        string

@@ -83,6 +83,10 @@ type Field struct {
 	Optional   bool     `json:"optional,omitempty"`
 	Desc       string   `json:"desc,omitempty"`
 	Table      string   `json:"table,omitempty"`
+	Ts         string   `json:"ts,omitempty"`
+	Ellipsis   bool     `json:"ellipsis,omitempty"`
+	HideTable  bool     `json:"hide_table,omitempty"`
+	Tooltip    string   `json:"tooltip,omitempty"`
 }
 
 func (r *Field) IsOptional() bool {
@@ -501,18 +505,24 @@ func inspectStruct(t reflect.Type, name FunName) *Field {
 			}
 
 			childField := &Field{
-				Name:    fieldName,
-				Type:    ft.Type.String(),
-				Json:    ft.Tag.Get("json"),
-				Enum:    ft.Tag.Get("enum"),
-				Desc:    ft.Tag.Get("dc"),
-				Table:   ft.Tag.Get("table"),
-				Package: ft.Type.PkgPath(),
-				Array:   arrayFlag,
+				Name:       fieldName,
+				Type:       ft.Type.String(),
+				Json:       ft.Tag.Get("json"),
+				Enum:       ft.Tag.Get("enum"),
+				Desc:       ft.Tag.Get("dc"),
+				Table:      ft.Tag.Get("table"),
+				Typescript: ft.Tag.Get("table"),
+				Ts:         ft.Tag.Get("ts"),
+				Ellipsis:   ft.Tag.Get("ellipsis") == "true",
+				HideTable:  ft.Tag.Get("hideTable") == "true",
+				Tooltip:    ft.Tag.Get("tooltip"),
+				Package:    ft.Type.PkgPath(),
+				Array:      arrayFlag,
 			}
-			var dcArr = strings.Split(childField.Desc, ":")
-			if len(dcArr) > 1 {
+			var dcArr = strings.Split(childField.Desc, "###")
+			if len(dcArr) == 2 {
 				childField.Desc = dcArr[0]
+				childField.Tooltip = dcArr[1]
 			}
 
 			childField.Typescript = mapping(childField.Type)

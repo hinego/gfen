@@ -1,8 +1,7 @@
 package reflectx
 
 const EnumTypeTemplate = `import { request } from '@umijs/max';
-import Decimal from 'decimal.js'; 
-{{range $k, $v := .Data}} 
+import Decimal from 'decimal.js';  {{range $k, $v := .Data}} 
 export namespace {{$v.Name | ToName}} { {{range .Enum}} 
 	export enum {{.Name | ToName}} { {{range .Enums}}   	
 		{{.Name | ToName}} = {{.Typescript}}, {{end}}
@@ -16,15 +15,17 @@ export namespace {{$v.Name | ToName}} { {{range .Enum}}
 			label: '{{.Desc}}',
 	  	},{{end}}
 	] {{end}}   {{range .Enum}} 
-	{{end}}
-	
-	{{if $v.Data}}  
+	{{end}} {{if $v.Data}}  
 	export const DataColums: Func.Column[] = [ {{range $v.Data.Data}} 
 			{
 				name:"{{.Json}}",
 				desc:"{{.Desc}}",
 				type:"{{.Typescript}}",
 				table:"{{.Table}}",
+				ts:"{{.Ts}}",
+				{{if .HideTable}}hideTable:true,{{else}}hideTable:false,{{end}}
+				{{if .Ellipsis}}ellipsis:true,{{else}}ellipsis:false,{{end}}
+				tooltip:"{{.Tooltip}}",
 			}, {{end}}
 	] {{end}} {{if $v.Create}}  
 	export const CreateColums: Func.Column[] = [ {{range $v.Create.Data}} 
@@ -33,6 +34,10 @@ export namespace {{$v.Name | ToName}} { {{range .Enum}}
 				desc:"{{.Desc}}",
 				type:"{{.Typescript}}",
 				table:"{{.Table}}",
+				ts:"{{.Ts}}",
+				{{if .HideTable}}hideTable:true,{{else}}hideTable:false,{{end}}
+				{{if .Ellipsis}}ellipsis:true,{{else}}ellipsis:false,{{end}}
+				tooltip:"{{.Tooltip}}",
 			}, {{end}}
 	] {{end}} {{if $v.Update}}  
 	export const UpdateColums: Func.Column[] = [ {{range $v.Update.Data}} 
@@ -41,14 +46,12 @@ export namespace {{$v.Name | ToName}} { {{range .Enum}}
 				desc:"{{.Desc}}",
 				type:"{{.Typescript}}",
 				table:"{{.Table}}",
+				ts:"{{.Ts}}",
+				{{if .HideTable}}hideTable:true,{{else}}hideTable:false,{{end}}
+				{{if .Ellipsis}}ellipsis:true,{{else}}ellipsis:false,{{end}}
+				tooltip:"{{.Tooltip}}",
 			}, {{end}}
-	] {{end}}
-
-
-
-
-	
-	{{range .Fields}}
+	] {{end}} {{range .Fields}}
 	export interface {{.TypeName | ToName}} 
 	{ {{range .Data}}
 		 {{.Json}}{{if .Optional}}?{{end}}: {{.TypeNameArray}};  {{end}}
@@ -62,42 +65,44 @@ export namespace {{$v.Name | ToName}} { {{range .Enum}}
 			  ...(options || {}),
 		 });
 	} {{end}}
-} 
-{{end}}
-
+}  {{end}}
 export namespace Func {
-
 	export interface Column
     {
         name: string;
         desc: string;
+		tooltip: string;
         type: string;
         sorter?: boolean;
         required?: boolean;
 		table?: string;
+		ts: string;
+		hideTable: boolean;
+		ellipsis: boolean;
     }
 	export interface Sorter 
 	{
 		name: string;
 		type: string;
 	}
-	export const MapFind = (name: string) => {
+	export const MapFind = (name: string,table?: string) => {
 		const path = window.location.pathname.toLowerCase();
 		const arr = path.split('/');
-		const key = "/" + arr[arr.length - 1] + "/" + name;
+		const key = table ? "/" + table + "/" + name : "/" + arr[arr.length - 1] + "/" + name;
 		switch (key) { {{range $k, $v := .Data}}   {{range .Enum}}
 			case '/{{$v.Name | lower}}/{{.Name | lower}}': return {{$v.Name | ToName}}.{{.Name | ToName}}Map; {{end}} {{end}}
 			default: return undefined;
 		}
 	}
-	export const ArrayFind = (path: string) => {
-		path = path.toLowerCase();
+	export const ArrayFind = (name: string,table?: string) => {
+		const path = window.location.pathname.toLowerCase();
+		const arr = path.split('/');
+		const key = table ? "/" + table + "/" + name : "/" + arr[arr.length - 1] + "/" + name;
 		switch (path) { {{range $k, $v := .Data}}  {{range .Enum}}
-			case '/{{$v.Name | lower}}/{{$v.File | lower}}': return {{$v.Name | ToName}}.{{.Name | ToName}}Array; {{end}} {{end}}
+			case '/{{$v.Name | lower}}/{{.Name | lower}}': return {{$v.Name | ToName}}.{{.Name | ToName}}Array; {{end}} {{end}}
 			default: return undefined;
 		}
 	}
-
 	export const ColumsFind = (name: string): Column[] | undefined  => {
 		const path = window.location.pathname.toLowerCase()+"/"+name.toLowerCase();
 		switch (path) { {{range $k, $v := .Data}}   {{if $v.Data}}
@@ -107,7 +112,6 @@ export namespace Func {
 			default: return undefined;
 		}
 	}
-
 	export const FunctionFind = (path: string)  => {
 		path = path.toLowerCase();
 		switch (path) { {{range $k, $v := .Data}}  {{range .Func}} 
@@ -115,7 +119,6 @@ export namespace Func {
 			default: return undefined;
 		}
 	}
-
 	export const FetchFind = (name?: string)  => {
 		const path = name ? name + "/fetch" : window.location.pathname.toLowerCase()+"/fetch";
 		switch (path) { {{range $k, $v := .Data}}  {{range .Func}} {{if eq .Fun "fetch"}}
@@ -152,10 +155,7 @@ export namespace Func {
 		}
 	}
 }
-
-
-
- export default { {{range $k, $v := .Data}} 
+export default { {{range $k, $v := .Data}} 
 	{{$v.Name | ToName}}, {{end}}
 	Func,
  };

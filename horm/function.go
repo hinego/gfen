@@ -231,6 +231,8 @@ func (c *Column) Tag() string {
 	}
 	if c.Relation != nil {
 		tagMap["table"] = c.Relation.RefTable
+	} else if c.Table != "" {
+		tagMap["table"] = c.Table
 	}
 	if c.Sensitive {
 		tagMap["json"] = "-"
@@ -240,6 +242,9 @@ func (c *Column) Tag() string {
 	}
 	if c.HideSearch {
 		tagMap["hideSearch"] = "true"
+	}
+	if c.Ellipsis {
+		tagMap["ellipsis"] = "true"
 	}
 	if c.Ts != "" {
 		tagMap["ts"] = c.Ts
