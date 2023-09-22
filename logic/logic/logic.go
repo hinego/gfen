@@ -5,7 +5,6 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -47,7 +46,7 @@ func (r *sLogic) Parse(in *genx.LogicInput) (err error) {
 	if err = r.serviceLogicInit(); err != nil {
 		return err
 	}
-	log.Println("logic parse done")
+	// log.Println("logic parse done")
 	return err
 }
 func (r *sLogic) serviceRegInit(logic *genx.Logic) (err error) {

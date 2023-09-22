@@ -16,6 +16,7 @@ type (
 		Clear(keep string, pattern string, paths ...string)
 		GetModule() string
 		Path(paths ...string) string
+		Skip(skip bool)
 	}
 )
 

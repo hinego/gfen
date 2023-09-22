@@ -22,6 +22,7 @@ import (
 )
 
 type sGen struct {
+	skip   bool
 	module string
 	Files  map[string]struct{}
 }
@@ -33,7 +34,9 @@ func (r *sGen) Execute(in *genx.Execute) (err error) {
 	name := gfile.Abs(in.File)
 	r.Files[name] = struct{}{}
 	if gfile.Exists(in.File) && !in.Must {
-		log.Println("skipfile", in.File)
+		if !r.skip {
+			log.Println("skipfile", in.File)
+		}
 		return nil
 	}
 	var (
@@ -56,7 +59,9 @@ func (r *sGen) Execute(in *genx.Execute) (err error) {
 		}
 		data []byte
 	)
-	log.Println("generate", in.File)
+	if !r.skip {
+		log.Println("generate", in.File)
+	}
 	if len(in.Replace) > 0 {
 		in.Code = gstr.ReplaceByMap(in.Code, in.Replace)
 	}
@@ -144,6 +149,9 @@ func (r *sGen) Path(paths ...string) string {
 	paths = append([]string{r.GetModule()}, paths...)
 	code := strings.Join(paths, "/")
 	return strings.ReplaceAll(code, "//", "/")
+}
+func (r *sGen) Skip(skip bool) {
+	r.skip = skip
 }
 func removeEmptyDirs(dir string) error {
 	isEmpty, err := isDirEmpty(dir)

@@ -7,6 +7,9 @@ import (
 	"github.com/hinego/gfen/ssr"
 )
 
+func Skip(skip bool) {
+	ssr.Gen().Skip(skip)
+}
 func Parse(in *genx.LogicInput) (err error) {
 	return ssr.Logic().Parse(in)
 }
