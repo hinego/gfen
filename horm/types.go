@@ -69,6 +69,8 @@ type (
 		Ts         string // 前端映射的Ts类型
 		Table      string //此字段所在的表名
 		Ellipsis   bool   //是否省略
+		Filter     string //过滤器 关联ID时前端的过来 例如：filter:"chain_id:chain_id|user_id:1"
+		Config     string //前端的Config config:"table_enum:false|form_enum:false"
 	}
 	Table struct {
 		Name        string

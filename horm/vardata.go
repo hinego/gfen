@@ -25,18 +25,21 @@ var (
 				Type:      Int64,
 				Desc:      "创建时间",
 				HideTable: true,
+				Ts:        "datetime",
 			},
 			{
 				Name:      "updated_at",
 				Type:      Int64,
 				Desc:      "更新时间",
 				HideTable: true,
+				Ts:        "datetime",
 			},
 			{
 				Name:      "deleted_at",
 				Type:      DeletedAt,
 				Desc:      "删除时间",
 				HideTable: true,
+				Ts:        "datetime",
 			},
 		},
 	}

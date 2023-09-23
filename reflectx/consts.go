@@ -21,7 +21,9 @@ export namespace {{$v.Name | ToName}} { {{range .Enum}}
 				name:"{{.Json}}",
 				desc:"{{.Desc}}",
 				type:"{{.Typescript}}",
+				filter:"{{.Filter}}",
 				table:"{{.Table}}",
+				config:"{{.Config}}",
 				ts:"{{.Ts}}",
 				{{if .HideTable}}hideTable:true,{{else}}hideTable:false,{{end}}
 				{{if .Ellipsis}}ellipsis:true,{{else}}ellipsis:false,{{end}}
@@ -33,7 +35,9 @@ export namespace {{$v.Name | ToName}} { {{range .Enum}}
 				name:"{{.Json}}",
 				desc:"{{.Desc}}",
 				type:"{{.Typescript}}",
+				filter:"{{.Filter}}",
 				table:"{{.Table}}",
+				config:"{{.Config}}",
 				ts:"{{.Ts}}",
 				{{if .HideTable}}hideTable:true,{{else}}hideTable:false,{{end}}
 				{{if .Ellipsis}}ellipsis:true,{{else}}ellipsis:false,{{end}}
@@ -46,6 +50,8 @@ export namespace {{$v.Name | ToName}} { {{range .Enum}}
 				desc:"{{.Desc}}",
 				type:"{{.Typescript}}",
 				table:"{{.Table}}",
+				config:"{{.Config}}",
+				filter:"{{.Filter}}",
 				ts:"{{.Ts}}",
 				{{if .HideTable}}hideTable:true,{{else}}hideTable:false,{{end}}
 				{{if .Ellipsis}}ellipsis:true,{{else}}ellipsis:false,{{end}}
@@ -79,6 +85,8 @@ export namespace Func {
 		ts: string;
 		hideTable: boolean;
 		ellipsis: boolean;
+		filter: string;
+		config: string;
     }
 	export interface Sorter 
 	{

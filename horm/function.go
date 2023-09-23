@@ -229,10 +229,17 @@ func (c *Column) Tag() string {
 	} else {
 		tagMap["dc"] = c.Name
 	}
-	if c.Relation != nil {
+	if c.Relation != nil && c.Table != "-" {
 		tagMap["table"] = c.Relation.RefTable
 	} else if c.Table != "" {
 		tagMap["table"] = c.Table
+	}
+
+	if c.Filter != "" {
+		tagMap["filter"] = c.Filter
+	}
+	if c.Config != "" {
+		tagMap["config"] = c.Config
 	}
 	if c.Sensitive {
 		tagMap["json"] = "-"

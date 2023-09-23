@@ -87,6 +87,8 @@ type Field struct {
 	Ellipsis   bool     `json:"ellipsis,omitempty"`
 	HideTable  bool     `json:"hide_table,omitempty"`
 	Tooltip    string   `json:"tooltip,omitempty"`
+	Filter     string   `json:"filter,omitempty"`
+	Config     string   `json:"config,omitempty"`
 }
 
 func (r *Field) IsOptional() bool {
@@ -516,6 +518,8 @@ func inspectStruct(t reflect.Type, name FunName) *Field {
 				Ellipsis:   ft.Tag.Get("ellipsis") == "true",
 				HideTable:  ft.Tag.Get("hideTable") == "true",
 				Tooltip:    ft.Tag.Get("tooltip"),
+				Filter:     ft.Tag.Get("filter"),
+				Config:     ft.Tag.Get("config"),
 				Package:    ft.Type.PkgPath(),
 				Array:      arrayFlag,
 			}
