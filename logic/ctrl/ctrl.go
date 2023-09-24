@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/os/gfile"
 	"github.com/hinego/gfen/genx"
 	"github.com/hinego/gfen/ssr"
 	"golang.org/x/text/cases"
@@ -73,6 +74,17 @@ func (r *sCtrl) Generate(data *genx.ApiInput) (err error) {
 						return
 					}
 				}
+				if !file.SkipConvent {
+					var input = &genx.Fun{
+						API:     api,
+						Version: version,
+						File:    file,
+					}
+					if err = r.controllerConvert(input); err != nil {
+						return
+					}
+				}
+
 			}
 		}
 	}
@@ -202,12 +214,41 @@ func (r *sCtrl) controllerFunc(data *genx.Fun) (err error) {
 			File:    fmt.Sprintf(r.controller+"/%s/%s/%s/%s_%s_%s_%s.go", api.Name, file.Name, version.Name, api.Name, file.Name, version.Name, function.Name),
 		}
 	)
+
 	if function.Code != nil {
 		input.Replace["#code#"] = function.Code.Code
 		input.Map["Packages"] = function.Code.Import()
 		for k, v := range function.Code.Data {
 			input.Map[k] = v
 		}
+	}
+	return ssr.Gen().Execute(input)
+}
+func (r *sCtrl) controllerConvert(data *genx.Fun) (err error) {
+	var (
+		api     = data.API
+		version = data.Version
+		file    = data.File
+		input   = &genx.Execute{
+			Code: controllerConvertTemplate,
+			Data: map[string]any{},
+			Map: map[string]any{
+				"ApiName":     api.Name,
+				"VersionName": version.Name,
+				"FileName":    file.Name,
+				"Packages": []string{
+					"github.com/sucold/starter/internal/dao",
+				},
+			},
+			Replace: map[string]string{},
+			// Must:    true,
+			File: fmt.Sprintf(r.controller+"/%s/%s/%s/%s_%s_%s_convert.go", api.Name, file.Name, version.Name, api.Name, file.Name, version.Name),
+		}
+		haveGet = file.HaveFunction("get")
+	)
+	if !haveGet {
+		gfile.Remove(input.File)
+		return nil
 	}
 	return ssr.Gen().Execute(input)
 }

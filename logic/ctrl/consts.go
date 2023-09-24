@@ -42,6 +42,31 @@ func (r *controller{{title .VersionName}}) {{title .FunctionName}}(ctx context.C
 	return nil, gerror.NewCode(gcode.CodeNotImplemented) {{end}}
 }
 `
+const controllerConvertTemplate = `package {{.VersionName | lower}}
+
+import (
+	"github.com/gogf/gf/v2/util/gconv"
+	"github.com/sucold/starter/internal/dao"
+	{{.FileName}}{{.VersionName | title}} "github.com/sucold/starter/api/{{.ApiName}}/{{.VersionName}}/{{.FileName}}"
+)
+
+func (r *controllerV1) convert(in any) (res any) {
+	var (
+		req *dao.{{.FileName | title}}
+		ok  bool
+		data = &{{.FileName}}{{.VersionName | title}}.GetRes{}
+		err error
+	)
+	if req, ok = in.(*dao.{{.FileName | title}}); !ok {
+		return in
+	}
+	if err = gconv.Scan(req, data); err != nil {
+		return in
+	}
+	return data
+}
+`
+
 const initTemplate = `package {{.VersionName | lower}}
 
 import (

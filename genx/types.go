@@ -32,8 +32,9 @@ type (
 		Data []*File //对应v1目录下的API文件，例如:user.go hello.go
 	}
 	File struct {
-		Name string      //对应user.go hello.go
-		Data []*Function //对应user.go hello.go下的API
+		Name        string      //对应user.go hello.go
+		Data        []*Function //对应user.go hello.go下的API
+		SkipConvent bool        // 内部方法
 	}
 	Function struct {
 		Name        string //对应 方法的名称 例如：HelloReq中的Hello
@@ -79,6 +80,14 @@ type (
 	}
 )
 
+func (r *File) HaveFunction(name string) bool {
+	for _, v := range r.Data {
+		if strings.ToLower(v.Name) == name {
+			return true
+		}
+	}
+	return false
+}
 func (r *Code) WithData(data map[string]any) *Code {
 	return &Code{
 		Uses: r.Uses,
