@@ -884,7 +884,7 @@ func (r *cacheDriver) reload(date int64) (check bool, err error) {
 		return
 	}
 	if !r.lock.TryLock() {
-		r.nominalExecuteTime = time.Now().Unix()
+		r.nominalExecuteTime = date
 		return
 	}
 	defer r.lock.Unlock()
