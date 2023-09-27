@@ -43,13 +43,17 @@ func (r *Type) Valid() (ok bool) {
 	return r.value != nil
 }
 func (r *Type) Serializer() (value bool) {
+	valType := reflect.TypeOf(r.Type)
 	if r.Package() == "" {
+		switch valType.Kind() {
+		case reflect.Map, reflect.Slice, reflect.Array:
+			return true
+		}
 		return false
 	}
 	if r.Native {
 		return false
 	}
-	valType := reflect.TypeOf(r.Type)
 	if valType.Kind() != reflect.Ptr {
 		valType = reflect.PtrTo(valType)
 	}

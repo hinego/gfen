@@ -747,6 +747,7 @@ import (
 	"strings"
 	"errors"
 	"sync"
+	"sync/atomic"
 	"context"
 	"database/sql"
 	"gorm.io/gen"
@@ -793,11 +794,12 @@ type cacheValue struct {
 	Value cacheKey
 }
 type cacheDriver struct {
+	name 			   string
 	level              int
 	err                error
 	cache              sync.Map
-	lastExecuteTime    int64
-	nominalExecuteTime int64
+	lastExecuteTime    atomic.Int64
+	nominalExecuteTime atomic.Int64
 	fun                func(date int64, store func(data cacheKey)) (err error)
 	lock               sync.Mutex
 }
@@ -820,6 +822,7 @@ func (r *cacheDriver) Find() (data []cacheKey) {
 }
 
 func (r *cacheDriver) Init() (err error) {
+	defer log.Println("缓存已完成",r.name)
 	switch r.level {
 	case 1:
 		go r.Reload(0)
@@ -879,41 +882,27 @@ func (r *cacheDriver) store(key string, value cacheKey) {
 		Value: value,
 	})
 }
-func (r *cacheDriver) reload(date int64) (check bool, err error) {
-	if r.fun == nil {
-		return
+func (r *cacheDriver) getDate(date int64) int64 {
+	if r.lastExecuteTime.Load() == 0 {
+		return 0
 	}
+	return date
+}
+
+func (r *cacheDriver) Reload(date int64) (err error) {
 	if !r.lock.TryLock() {
-		r.nominalExecuteTime = date
-		return
+		r.nominalExecuteTime.Store(date)
+		return nil
 	}
 	defer r.lock.Unlock()
-	var now = time.Now().Unix()
-	// var date = now
-	if r.lastExecuteTime == 0 {
-		date = 0
-	}
-	if err = r.fun(date, r.Put); err != nil {
-		r.err = err // 如果出错 那么则暂时不使用缓存了
-		return
-	}
-	if r.err != nil {
-		r.err = nil
-	}
-	r.lastExecuteTime = now
-	return true, nil
-}
-func (r *cacheDriver) Reload(date int64) (err error) {
-	for {
-		var check bool
-		if check, err = r.reload(date); err != nil {
-			time.Sleep(time.Second * 5)
-			continue
+	for r.nominalExecuteTime.Load() > r.lastExecuteTime.Load() {
+		now := time.Now().Unix()
+		current := r.getDate(date)
+		if err := r.fun(current, r.Put); err != nil {
+			r.err = err
+			return err
 		}
-		if check && r.nominalExecuteTime > r.lastExecuteTime {
-			return r.Reload(r.nominalExecuteTime)
-		}
-		break
+		r.lastExecuteTime.Store(now)
 	}
 	return
 }
@@ -923,7 +912,7 @@ var ( {{range .Table}}
 	{{ .Name | lower }}Cacher = &cacheDriver{
 		err: errors.New("wait load"),
 		level: {{.CacheLevel}},
-
+		name: "{{.TableName}}",
 	} {{end}}
 	TypeMapping = map[string]any{ {{range .Table}}
 		"{{ .Name | lower }}": &{{ .Name | ToName }}{},  {{end}}

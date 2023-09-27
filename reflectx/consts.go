@@ -2,6 +2,10 @@ package reflectx
 
 const EnumTypeTemplate = `import { request } from '@umijs/max';
 import Decimal from 'decimal.js';  {{range $k, $v := .Data}} 
+
+
+
+
 export namespace {{$v.Name | ToName}} { {{range .Enum}} 
 	export enum {{.Name | ToName}} { {{range .Enums}}   	
 		{{.Name | ToName}} = {{.Typescript}}, {{end}}
@@ -93,8 +97,17 @@ export namespace Func {
 		name: string;
 		type: string;
 	}
+	export const GetLocation = (): string =>
+	{
+		const pathname = location.pathname.replaceAll("//", "/")
+		const split = pathname.split("/")
+		if (split.length <= 4) {
+			return pathname
+		}
+		return "/"+split.slice(-3).join("/")
+	}
 	export const MapFind = (name: string,table?: string) => {
-		const path = window.location.pathname.toLowerCase();
+		const path = Func.GetLocation().toLowerCase();
 		const arr = path.split('/');
 		const key = table ? "/" + table + "/" + name : "/" + arr[arr.length - 1] + "/" + name;
 		switch (key) { {{range $k, $v := .Data}}   {{range .Enum}}
@@ -103,7 +116,7 @@ export namespace Func {
 		}
 	}
 	export const ArrayFind = (name: string,table?: string) => {
-		const path = window.location.pathname.toLowerCase();
+		const path = Func.GetLocation().toLowerCase();
 		const arr = path.split('/');
 		const key = table ? "/" + table + "/" + name : "/" + arr[arr.length - 1] + "/" + name;
 		switch (path) { {{range $k, $v := .Data}}  {{range .Enum}}
@@ -112,7 +125,7 @@ export namespace Func {
 		}
 	}
 	export const ColumsFind = (name: string): Column[] | undefined  => {
-		const path = window.location.pathname.toLowerCase()+"/"+name.toLowerCase();
+		const path = Func.GetLocation().toLowerCase()+"/"+name.toLowerCase();
 		switch (path) { {{range $k, $v := .Data}}   {{if $v.Data}}
 			case '/{{$v.Version}}/{{$v.API}}/{{$v.File | lower}}/data': return {{$v.Name | ToName}}.DataColums; {{end}} {{if .Create}}
 			case '/{{$v.Version}}/{{$v.API}}/{{$v.File | lower}}/create': return {{$v.Name | ToName}}.CreateColums; {{end}} {{if .Update}}
@@ -128,40 +141,41 @@ export namespace Func {
 		}
 	}
 	export const FetchFind = (name?: string)  => {
-		const path = name ? name + "/fetch" : window.location.pathname.toLowerCase()+"/fetch";
+		const path = name ? name + "/fetch" : Func.GetLocation().toLowerCase()+"/fetch";
 		switch (path) { {{range $k, $v := .Data}}  {{range .Func}} {{if eq .Fun "fetch"}}
 			case '{{.Path | lower}}': return {{$v.Name | ToName}}.{{.Fun | ToName}}; {{end}} {{end}} {{end}}
 			default: return undefined;
 		}
 	}
 	export const GetFind = ()  => {
-		const path = window.location.pathname.toLowerCase()+"/get";
+		const path = Func.GetLocation().toLowerCase()+"/get";
 		switch (path) { {{range $k, $v := .Data}}  {{range .Func}} {{if eq .Fun "get"}}
 			case '{{.Path | lower}}': return {{$v.Name | ToName}}.{{.Fun | ToName}}; {{end}} {{end}} {{end}}
 			default: return undefined;
 		}
 	}
 	export const UpdateFind = ()  => {
-		const path = window.location.pathname.toLowerCase()+"/update";
+		const path = Func.GetLocation().toLowerCase()+"/update";
 		switch (path) { {{range $k, $v := .Data}}  {{range .Func}} {{if eq .Fun "update"}}
 			case '{{.Path | lower}}': return {{$v.Name | ToName}}.{{.Fun | ToName}}; {{end}} {{end}} {{end}}
 			default: return undefined;
 		}
 	}
 	export const CreateFind = ()  => {
-		const path = window.location.pathname.toLowerCase()+"/create";
+		const path = Func.GetLocation().toLowerCase()+"/create";
 		switch (path) { {{range $k, $v := .Data}}  {{range .Func}} {{if eq .Fun "create"}}
 			case '{{.Path | lower}}': return {{$v.Name | ToName}}.{{.Fun | ToName}}; {{end}} {{end}} {{end}}
 			default: return undefined;
 		}
 	}
 	export const DeleteFind = ()  => {
-		const path = window.location.pathname.toLowerCase()+"/delete";
+		const path = Func.GetLocation().toLowerCase()+"/delete";
 		switch (path) { {{range $k, $v := .Data}}  {{range .Func}} {{if eq .Fun "delete"}}
 			case '{{.Path | lower}}': return {{$v.Name | ToName}}.{{.Fun | ToName}}; {{end}} {{end}} {{end}}
 			default: return undefined;
 		}
 	}
+	
 }
 export default { {{range $k, $v := .Data}} 
 	{{$v.Name | ToName}}, {{end}}
