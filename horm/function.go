@@ -80,13 +80,68 @@ func (r *Type) Model() string {
 	return ref.Type().String()
 }
 func (r *Type) Package() string {
-	ref := reflect.ValueOf(r.Type)
-	for ref.Kind() == reflect.Ptr {
-		ref = ref.Elem()
+	var data = getPackageDeps(reflect.TypeOf(r.Type))
+	if len(data) > 0 {
+		return data[0]
 	}
-	return ref.Type().PkgPath()
+	return ""
 }
 
+func getPackageDeps(t reflect.Type) []string {
+	packages := make(map[string]bool)
+
+	for t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	pkg := t.PkgPath()
+	if pkg != "" {
+		packages[pkg] = true
+	}
+
+	switch t.Kind() {
+	case reflect.Slice, reflect.Array:
+		for _, p := range getPackageDeps(t.Elem()) {
+			packages[p] = true
+		}
+	case reflect.Map:
+		for _, p := range getPackageDeps(t.Key()) {
+			packages[p] = true
+		}
+		for _, p := range getPackageDeps(t.Elem()) {
+			packages[p] = true
+		}
+	// case reflect.Struct:
+	// 	for i := 0; i < t.NumField(); i++ {
+	// 		for _, p := range getPackageDeps(t.Field(i).Type) {
+	// 			packages[p] = true
+	// 		}
+	// 	}
+	case reflect.Chan:
+		for _, p := range getPackageDeps(t.Elem()) {
+			packages[p] = true
+		}
+	case reflect.Func:
+		for i := 0; i < t.NumIn(); i++ {
+			for _, p := range getPackageDeps(t.In(i)) {
+				packages[p] = true
+			}
+		}
+		for i := 0; i < t.NumOut(); i++ {
+			for _, p := range getPackageDeps(t.Out(i)) {
+				packages[p] = true
+			}
+		}
+	}
+
+	var result []string
+	for p := range packages {
+		if !strings.Contains(p, "builtin") { // filter out built-in packages
+			result = append(result, p)
+		}
+	}
+	return result
+}
 func GenTag(data map[string]any) string {
 	var builder strings.Builder
 	var tagSlice []string
