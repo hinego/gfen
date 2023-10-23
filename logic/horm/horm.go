@@ -15,7 +15,37 @@ type sHorm struct {
 	relation map[string]map[string]*horm.Relation
 }
 
+func (r *sHorm) Unique(in *horm.Input) (data *horm.Input) {
+	var unique = make(map[string]map[string]struct{})
+	data = &horm.Input{
+		Table: make([]*horm.Table, 0),
+		Path:  in.Path,
+	}
+	for _, v := range in.Table {
+		if _, ok := unique[v.Name]; !ok {
+			unique[v.Name] = make(map[string]struct{})
+			var tab = &horm.Table{
+				Name:        v.Name,
+				Column:      make([]*horm.Column, 0),
+				Primary:     v.Primary,
+				PrimaryType: v.PrimaryType,
+				Mixin:       v.Mixin,
+				CacheLevel:  v.CacheLevel,
+				Relation:    v.Relation,
+			}
+			for _, v1 := range v.Column {
+				if _, ok1 := unique[v.Name][v1.Name]; !ok1 {
+					unique[v.Name][v1.Name] = struct{}{}
+					tab.Column = append(tab.Column, v1)
+				}
+			}
+			data.Table = append(data.Table, tab)
+		}
+	}
+	return
+}
 func (r *sHorm) Generate(in *horm.Input) (err error) {
+	in = r.Unique(in)
 	r.Input = in
 	r.fill()
 	if err = r.field(); err != nil {
@@ -211,8 +241,14 @@ func (r *sHorm) fill() {
 	}
 	for k, v := range r.Table {
 		for _, v1 := range v.Column {
-			if v1.Relation != nil && v1.Relation.Type == horm.BelongsTo {
-
+			if v1.Relation != nil {
+				v1.Relation.Type = horm.BelongsTo
+				v1.Relation.Table = v.Name
+				v1.Relation.Foreign = v1.Name
+				if v1.Relation.Reference == "" {
+					v1.Relation.Reference = "id"
+				}
+				v1.Relation.RefName = strings.Title(v.Name) + "s"
 				var ref = v1.Relation.Reverse()
 				r.setRelation(ref)
 				if v1.Type.Point {
