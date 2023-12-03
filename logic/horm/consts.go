@@ -304,11 +304,11 @@ func (a {{.Table}}Do) Query(face queryFace) (err error) {
 func (a {{.Table}}Do) WhereRaw(data any, args ...any) I{{$.Model}}Do {
 	var do = a.Dao
 	switch e := data.(type) {
-	case []*SqlWhere:
+	case []*gen.SqlWhere:
 		for _, v := range e {
 			do = do.WhereRaw(v.Data, v.Args...)
 		}
-	case *SqlWhere:
+	case *gen.SqlWhere:
 		do = do.WhereRaw(e.Data, e.Args...)
 	default:
 		do = do.WhereRaw(data, args...)
@@ -760,11 +760,6 @@ import (
 var (
 	_db          *gorm.DB
 ) 
-type SqlWhere struct {
-	Name string
-	Data any
-	Args []any
-}
 
 type CacheWhere interface {
 	GetCondition() []gen.Condition
@@ -775,7 +770,7 @@ type queryFace interface {
 	GetOffset() int
 	GetSize() int
 	GetOrder() (data []field.Expr)
-	GetWhere() []*SqlWhere
+	GetWhere() []*gen.SqlWhere
 	SetFun(fun func(fieldName string) (field.OrderExpr, bool))
 	SetData(data any)
 	SetTotal(total int64)
