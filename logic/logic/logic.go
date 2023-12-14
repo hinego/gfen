@@ -5,7 +5,6 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -154,7 +153,6 @@ func (r *sLogic) parseFile(file string) (err error) {
 		if i.Name != nil {
 			name = i.Name.Name
 		}
-		log.Println(name, path)
 		if strings.Contains(name, ".") {
 			var dd = strings.Split(name, ".")
 			imports[dd[0]] = path
